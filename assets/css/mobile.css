@@ -25,21 +25,6 @@
     overflow-x: hidden;
   }
 
-  /* --- Global Mobile Card Padding --- */
-  .card,
-  .content-card:not(.flush-card),
-  .dept-group-card,
-  .activity-card,
-  .alert-card,
-  .vm-card,
-  .trust-card,
-  .profile-card,
-  .pc-left,
-  .pc-right {
-    padding: 20px !important;
-    width: 100%;
-    box-sizing: border-box;
-  }
 
   .content-card.flush-card {
     padding: 0 !important;
@@ -545,6 +530,7 @@
   .hero-grid {
     grid-template-columns: 1fr;
     gap: 20px;
+    margin-bottom: 20px;
   }
   .counter-section {
     display: grid;
@@ -565,9 +551,12 @@
 
   .vision-mission-grid {
     grid-template-columns: 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
   }
+
   .main-content {
-    padding: 20px;
+    padding: 30px 20px 30px;
   }
   html {
     scroll-padding-top: calc(var(--header-height) + 8px);
@@ -603,7 +592,7 @@
   }
   .hero-slideshow-container {
     height: 280px;
-    margin-top: 0 !important;
+    margin-bottom: 30px;
   }
 }
 
@@ -611,13 +600,15 @@
   .profile-grid,
   .profile-section {
     grid-template-columns: 1fr;
-    gap: 30px;
+    gap: 20px;
+    margin-bottom: 20px;
   }
   .profile-card {
     position: static;
     max-width: 100%;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
   }
+  .section-title {margin-top: 20px;}
   .side-stack-layout {
     grid-template-columns: 1fr;
   }
@@ -654,6 +645,7 @@
     text-align: center !important;
     gap: 20px;
   }
+  .trust-section {margin-bottom: 20px;}
 
   .trust-logo {
     width: 100%; /* Full width on mobile */
@@ -673,14 +665,18 @@
   }
   .warning-grid {
     grid-template-columns: 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
   }
   .activities-grid,
   .grid-2-col {
     grid-template-columns: 1fr !important;
+    gap: 20px;
   }
   .copyright-bar {
     flex-direction: column;
     text-align: center;
+    gap: 10px;
   }
   .dev-wrapper {
     width: 100%;
