@@ -3,7 +3,7 @@
   html,
   body {
     max-width: 100vw;
-    overflow-x: hidden; /* Prevents the whole page from sliding sideways */
+    overflow-x: hidden;
   }
 
   /* --- Layout & Container Fixes --- */
@@ -24,7 +24,6 @@
     width: 100%;
     overflow-x: hidden;
   }
-
 
   .content-card.flush-card {
     padding: 0 !important;
@@ -164,18 +163,18 @@
     position: relative;
     transition: all 0.3s ease;
   }
-#mobile-theme-toggle .theme-icon {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  margin: auto;
-  width: fit-content;
-  height: fit-content;
-  font-size: 0.95rem;
-  color: var(--primary);
-}
+  #mobile-theme-toggle .theme-icon {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+    width: fit-content;
+    height: fit-content;
+    font-size: 0.95rem;
+    color: var(--primary);
+  }
   #mobile-theme-toggle:active .mobile-toggle-wrapper {
     transform: scale(0.95);
     background: var(--primary);
@@ -525,7 +524,6 @@
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 20px;
     padding-bottom: 20px;
-
   }
   .hero-grid {
     grid-template-columns: 1fr;
@@ -608,7 +606,9 @@
     max-width: 100%;
     margin-bottom: 20px;
   }
-  .section-title {margin-top: 20px;}
+  .section-title {
+    margin-top: 20px;
+  }
   .side-stack-layout {
     grid-template-columns: 1fr;
   }
@@ -645,7 +645,9 @@
     text-align: center !important;
     gap: 20px;
   }
-  .trust-section {margin-bottom: 20px;}
+  .trust-section {
+    margin-bottom: 20px;
+  }
 
   .trust-logo {
     width: 100%; /* Full width on mobile */
