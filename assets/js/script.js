@@ -264,7 +264,7 @@ function getHeaderHeight() {
 function syncHeaderHeight() {
     const height = getHeaderHeight();
     document.documentElement.style.setProperty(
-        '--header-height',
+        '--mobile-header-height',
         height + 'px'
     );
 }
@@ -275,11 +275,8 @@ window.addEventListener('load', () => {
     if (scrollAdjusted) return;
     scrollAdjusted = true;
 
+    syncHeaderHeight();
     const headerHeight = getHeaderHeight();
-    document.documentElement.style.setProperty(
-        '--header-height',
-        headerHeight + 'px'
-    );
 
     if (location.hash) {
         const target = document.querySelector(location.hash);
@@ -295,16 +292,5 @@ window.addEventListener('load', () => {
     }
 });
 
-
 window.addEventListener('resize', syncHeaderHeight);
 window.addEventListener('orientationchange', syncHeaderHeight);
-
-let resizeRAF = null;
-
-window.addEventListener('resize', () => {
-    if (resizeRAF) return;
-    resizeRAF = requestAnimationFrame(() => {
-        syncHeaderHeight();
-        resizeRAF = null;
-    });
-});

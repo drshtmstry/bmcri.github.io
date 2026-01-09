@@ -13,6 +13,7 @@
   --font-body: "Montserrat", sans-serif;
   --radius: 16px;
   --header-height: 60px;
+  --mobile-header-height: 60px;
 }
 [data-theme="light"] {
   --bg-body: #f0f2f5;
