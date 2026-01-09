@@ -179,16 +179,18 @@
     position: relative;
     transition: all 0.3s ease;
   }
-  #mobile-theme-toggle .theme-icon {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: fit-content;
-    height: fit-content;
-    font-size: 0.95rem;
-    color: var(--primary);
-  }
+#mobile-theme-toggle .theme-icon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: auto;
+  width: fit-content;
+  height: fit-content;
+  font-size: 0.95rem;
+  color: var(--primary);
+}
   #mobile-theme-toggle:active .mobile-toggle-wrapper {
     transform: scale(0.95);
     background: var(--primary);
@@ -222,7 +224,7 @@
     flex-wrap: wrap;
     justify-content: center;
     gap: 8px;
-    margin-bottom: 25px;
+    margin-bottom: 15px;
     width: 100%;
   }
   .mobile-quick-links a {
@@ -272,13 +274,17 @@
   }
   #footer-theme-btn.btn-glass-sm {
     height: 40px;
-    padding: 0 20px;
+    padding: 0 16px;
     border-radius: 50px;
-    border: 1px solid var(--border-color);
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     color: var(--text-main);
     cursor: pointer;
-    font-family: var(--font-body);
+    font-family: var(--text-main);
     font-weight: 600;
     font-size: 0.85rem;
     display: flex;
@@ -286,6 +292,15 @@
     justify-content: center;
     gap: 8px;
     white-space: nowrap;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Added transition for smoothness */
+  }
+
+  /* CORRECTED SELECTOR BELOW (Removed the 'a') */
+  #footer-theme-btn.btn-glass-sm:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25);
   }
   .footer-theme-wrapper {
     position: relative;
@@ -342,7 +357,7 @@
   .mobile-footer-divider {
     border: 0;
     border-top: 1px solid var(--border-color);
-    margin: 30px 0;
+    margin: 20px 0;
     width: 100%;
     opacity: 0.5;
   }
