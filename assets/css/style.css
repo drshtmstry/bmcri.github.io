@@ -12,7 +12,7 @@
   --font-heading: "Google Sans", sans-serif;
   --font-body: "Montserrat", sans-serif;
   --radius: 16px;
-  --header-height: 60px;
+  --header-height: 30px;
 }
 [data-theme="light"] {
   --bg-body: #f0f2f5;
