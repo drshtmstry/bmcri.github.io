@@ -181,7 +181,7 @@ button {
   font-family: var(--font-heading);
   text-align: center;
   font-size: 2rem;
-  margin: 30px 0 30px;
+  margin: 30px 0 10px;
 }
 .section-title i {
   color: var(--primary);
@@ -752,7 +752,7 @@ textarea {
   background: 0 0;
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
-  margin-bottom: 30px;
+  margin-bottom: 40px;
   z-index: 1;
 }
 .hero-slide {
@@ -1027,10 +1027,6 @@ textarea {
 .activity-card {
   gap: 15px;
 }
-.activity-card:hover {
-  transform: translateY(-5px);
-  border-color: var(--primary);
-}
 .activity-icon {
   font-size: 2rem;
   color: var(--accent);
@@ -1071,11 +1067,6 @@ textarea {
   max-width: 100%;
   height: auto;
   object-fit: contain;
-}
-/* .trust-card handled by unified block */
-.trust-card:hover {
-  border-color: var(--primary);
-  transform: translateY(-2px);
 }
 .trust-text {
   flex: 1;
@@ -1549,13 +1540,12 @@ textarea {
   display: block;
 }
 .glass-footer {
-  margin-top: 10px;
   position: relative;
   overflow: hidden;
   background: var(--bg-card);
   border-top: 1px solid var(--border-color);
   backdrop-filter: blur(var(--card-blur));
-  padding-top: 40px;
+  padding-top: 20px;
   box-shadow: var(--shadow-card);
 }
 .glass-footer::before {
@@ -1577,8 +1567,8 @@ textarea {
   z-index: 1;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 30px;
-  padding-bottom: 40px;
+  gap: 20px;
+  padding-bottom: 20px;
 }
 .footer-col h4 {
   font-family: var(--font-heading);
