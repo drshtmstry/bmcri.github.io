@@ -312,8 +312,9 @@ button {
   bottom: 90px !important;
 }
 #global-header {
-  min-height: 80px;
-  display: contents;
+  min-height: 80px; /* Approximate height of your desktop header */
+  display: block; /* Changed from 'contents' to block to respect height */
+  position: relative;
 }
 .top-bar {
   background: var(--bg-card);

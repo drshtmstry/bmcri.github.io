@@ -8,7 +8,9 @@
     max-width: 100vw;
     overflow-x: hidden;
   }
-
+  #global-header {
+    min-height: 60px; /* Match your --mobile-header-height */
+  }
   /* --- Layout & Container Fixes --- */
   .container-wide {
     padding-left: 20px !important;
@@ -120,10 +122,6 @@
     font-size: 1rem;
     letter-spacing: 0.5px;
     color: var(--text-main);
-  }
-
-  body {
-    padding-top: var(--header-height);
   }
 
   /* --- Toggles & Buttons --- */
@@ -623,7 +621,9 @@
     gap: 20px;
     margin-bottom: 20px;
   }
-
+  .vm-title {
+    margin-bottom: 5px !important;
+  }
   .main-content {
     padding: 30px 20px 30px;
   }
@@ -737,7 +737,7 @@
   .profile-card,
   .pc-left,
   .pc-right {
-    padding: 20px !important;
+    padding: 15px !important;
   }
 
   /* Slightly tighter gap for headings inside cards */
@@ -843,7 +843,8 @@
   .reveal {
     transform: none !important;
     opacity: 1 !important;
-    transition: none !important;
+    transition: opacity 0.6s ease-out,
+      transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
     will-change: auto;
   }
 }
