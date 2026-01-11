@@ -1,296 +1,324 @@
 document.addEventListener("DOMContentLoaded", () => {
     "use strict";
 
-    // 1. BASE URL CALCULATION
-    const cssLink = document.querySelector('link[href*="style.css"]');
-    const baseUrl = cssLink ? cssLink.getAttribute("href").split("assets/css/style.css")[0] || "./" : "./";
-    console.log("Base URL:", baseUrl);
+    // --- CONFIGURATION ---
+    const CONFIG = {
+        slideshowUrl: "assets/slideshow/slideshow.json",
+        useCache: true, // Set to false during active development
+        // Fallback if window.SITE_BASE isn't set in HTML
+        baseUrl: window.SITE_BASE || document.querySelector('base')?.href || "./"
+    };
 
-    // 2. HELPER: FIX RELATIVE LINKS
-    const fixRelativeLinks = () => {
-        const elementsToFix = document.querySelectorAll('#global-header a[href], #global-footer a[href], #global-header img[src], #global-footer img[src]');
+    console.log("Base URL:", CONFIG.baseUrl);
 
-        elementsToFix.forEach(element => {
-            const attributeName = element.tagName === 'IMG' ? 'src' : 'href';
-            const currentValue = element.getAttribute(attributeName);
+    // --- 1. CORE UTILITIES ---
 
-            if (!currentValue || /^(http|\/\/|mailto:|tel:|#|data:)/.test(currentValue)) return;
+    /**
+     * Fixes relative links within a specific container only.
+     * much faster than scanning the whole document.
+     */
+    const fixRelativeLinks = (container) => {
+        if (!container) return;
 
-            let cleanPath = currentValue.replace(/^(\.?\/)/, '');
+        const selectors = 'a[href], img[src], link[href], script[src]';
+        const elements = container.querySelectorAll(selectors);
+
+        elements.forEach(element => {
+            const attr = element.tagName === 'IMG' || element.tagName === 'SCRIPT' ? 'src' : 'href';
+            const val = element.getAttribute(attr);
+
+            // Skip absolute links, anchors, data URIs, or javascript:
+            if (!val || /^(http|\/\/|mailto:|tel:|#|data:|javascript:)/.test(val)) return;
+
+            // Clean path (remove ./ or ../)
+            let cleanPath = val.replace(/^(\.?\/)/, '');
             while (cleanPath.startsWith('../')) {
                 cleanPath = cleanPath.substring(3);
             }
 
-            element.setAttribute(attributeName, baseUrl + cleanPath);
+            element.setAttribute(attr, CONFIG.baseUrl + cleanPath);
         });
     };
 
-    // 3. SCROLL REVEAL ANIMATION
-    const observer = new IntersectionObserver(entries => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('active');
-                observer.unobserve(entry.target);
+    /**
+     * Fetches HTML content with caching support.
+     */
+    const fetchComponent = async (filename) => {
+        const cacheKey = `bmc_cache_${filename}`;
+
+        // 1. Try Cache first
+        if (CONFIG.useCache) {
+            const cached = sessionStorage.getItem(cacheKey);
+            if (cached) return cached;
+        }
+
+        // 2. Network Fetch
+        try {
+            const response = await fetch(CONFIG.baseUrl + filename);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const html = await response.text();
+
+            // Save to cache
+            if (CONFIG.useCache) sessionStorage.setItem(cacheKey, html);
+            return html;
+        } catch (error) {
+            console.error(`Failed to load ${filename}:`, error);
+            return null;
+        }
+    };
+
+    // --- 2. COMPONENT LOADER (Render-on-Arrival Strategy) ---
+    const loadComponents = async () => {
+        const mainContentArea = document.getElementById("main-content-area");
+        // Only fetch homepage content if the container exists and is empty
+        const needsMain = mainContentArea && !mainContentArea.innerHTML.trim();
+
+        // -- Load Critical Components (Parallel but Independent) --
+
+        // 1. Header
+        fetchComponent('header.html').then(html => {
+            if (html) {
+                const headerEl = document.getElementById('global-header');
+                headerEl.innerHTML = html;
+                fixRelativeLinks(headerEl);
+                initializeNavigation(); // Init nav immediately after header loads
+                syncHeaderHeight();     // Calc height immediately
             }
         });
-    }, { threshold: 0.1 });
 
-    setTimeout(() => {
+        // 2. Main Content (Homepage)
+        if (needsMain) {
+            fetchComponent('homepage.html').then(html => {
+                if (html) {
+                    mainContentArea.innerHTML = html;
+                    fixRelativeLinks(mainContentArea);
+                    initObservers();      // Start animations
+                    initializeSlideshow();// Start slideshow
+                }
+            });
+        } else {
+            // If main content was already there (static page), just init observers
+            fixRelativeLinks(mainContentArea); // Fix links in static content too
+            initObservers();
+        }
+
+        // 3. Footer (Non-critical, let it load whenever)
+        fetchComponent('footer.html').then(html => {
+            if (html) {
+                const footerEl = document.getElementById('global-footer');
+                footerEl.innerHTML = html;
+                fixRelativeLinks(footerEl);
+
+                // Set Year
+                const yearSpan = document.getElementById("current-year");
+                if (yearSpan) yearSpan.textContent = new Date().getFullYear();
+
+                // Setup Footer Interactions
+                initFooterInteractions();
+            }
+        });
+    };
+
+    // --- 3. ANIMATION & OBSERVERS ---
+    const initObservers = () => {
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        // Observe elements in main content and footer
         document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-    }, 100);
+    };
 
-    // 4. SLIDESHOW LOGIC
+    // --- 4. SLIDESHOW LOGIC ---
     const initializeSlideshow = async () => {
-        const slideshowContainer = document.getElementById("dynamic-slideshow");
-        if (!slideshowContainer) return;
-
-        const runSlideshow = () => {
-            const slides = slideshowContainer.querySelectorAll(".hero-slide");
-            if (!slides.length) return;
-
-            let currentIndex = 0;
-            let slideInterval;
-
-            const showSlide = (newIndex) => {
-                slides[currentIndex].classList.remove("active");
-                currentIndex = (newIndex + slides.length) % slides.length;
-                slides[currentIndex].classList.add("active");
-            };
-
-            const startAutoPlay = () => {
-                slideInterval = setInterval(() => showSlide(currentIndex + 1), 5000);
-            };
-
-            const resetAutoPlay = () => {
-                clearInterval(slideInterval);
-                startAutoPlay();
-            };
-
-            const nextBtn = slideshowContainer.querySelector(".next");
-            const prevBtn = slideshowContainer.querySelector(".prev");
-
-            if (nextBtn) nextBtn.onclick = (e) => { e.stopPropagation(); showSlide(currentIndex + 1); resetAutoPlay(); };
-            if (prevBtn) prevBtn.onclick = (e) => { e.stopPropagation(); showSlide(currentIndex - 1); resetAutoPlay(); };
-
-            startAutoPlay();
-        };
+        const container = document.getElementById("dynamic-slideshow");
+        if (!container) return;
 
         try {
-            const response = await fetch(baseUrl + "assets/slideshow/slideshow.json");
-            if (!response.ok) throw new Error("Failed to load slideshow JSON");
+            const response = await fetch(CONFIG.baseUrl + CONFIG.slideshowUrl);
+            if (!response.ok) return;
+
             let images = await response.json();
+            // Shuffle images
             for (let i = images.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [images[i], images[j]] = [images[j], images[i]];
             }
-            const overlay = slideshowContainer.querySelector(".slide-overlay");
+
+            const overlay = container.querySelector(".slide-overlay");
+
+            // Create slides
             images.forEach((src, index) => {
-                const slideDiv = document.createElement("div");
-                slideDiv.className = `hero-slide ${index === 0 ? "active" : ""}`;
-                slideDiv.innerHTML = `<img src="${baseUrl}assets/slideshow/${src}" alt="Slide" ${index === 0 ? 'fetchpriority="high"' : 'loading="lazy"'}>`;
-                slideshowContainer.insertBefore(slideDiv, overlay);
+                const slide = document.createElement("div");
+                slide.className = `hero-slide ${index === 0 ? "active" : ""}`;
+                // High priority for first image only
+                const priority = index === 0 ? 'fetchpriority="high"' : 'loading="lazy"';
+                slide.innerHTML = `<img src="${CONFIG.baseUrl}assets/slideshow/${src}" alt="Slide" ${priority}>`;
+                container.insertBefore(slide, overlay);
             });
-            runSlideshow();
-        } catch (error) {
-            console.warn("Slideshow Error:", error);
-            runSlideshow();
+
+            // Start Logic
+            let currentIndex = 0;
+            const slides = container.querySelectorAll(".hero-slide");
+
+            if (slides.length > 1) {
+                const showSlide = (idx) => {
+                    slides[currentIndex].classList.remove("active");
+                    currentIndex = (idx + slides.length) % slides.length;
+                    slides[currentIndex].classList.add("active");
+                };
+
+                let interval = setInterval(() => showSlide(currentIndex + 1), 5000);
+
+                // Controls
+                const resetTimer = () => { clearInterval(interval); interval = setInterval(() => showSlide(currentIndex + 1), 5000); };
+
+                const nextBtn = container.querySelector(".next");
+                const prevBtn = container.querySelector(".prev");
+
+                if (nextBtn) nextBtn.onclick = (e) => { e.stopPropagation(); showSlide(currentIndex + 1); resetTimer(); };
+                if (prevBtn) prevBtn.onclick = (e) => { e.stopPropagation(); showSlide(currentIndex - 1); resetTimer(); };
+            }
+
+        } catch (e) {
+            console.warn("Slideshow skipped:", e);
         }
     };
 
-    // 5. COMPONENT LOADER
-    const loadComponents = async () => {
-        const fetchHtml = (file) => fetch(baseUrl + file).then(res => res.ok ? res.text() : null);
-
-        // Identify the main content area
-        const mainContentArea = document.getElementById("main-content-area");
-
-        // Determine if we need to load homepage content (only if main area exists and is empty)
-        const needsMainContent = mainContentArea && !mainContentArea.innerHTML.trim();
-
-        // Start all fetches in parallel
-        const headerPromise = fetchHtml('header.html');
-        const footerPromise = fetchHtml('footer.html');
-        const homepagePromise = needsMainContent ? fetchHtml('homepage.html') : Promise.resolve(null);
-
-        try {
-            // Wait for ALL data to arrive before rendering anything
-            const [headerHtml, footerHtml, homepageHtml] = await Promise.all([
-                headerPromise,
-                footerPromise,
-                homepagePromise
-            ]);
-
-            // 1. Inject Header
-            if (headerHtml) {
-                document.getElementById('global-header').innerHTML = headerHtml;
-                fixRelativeLinks();
-                initializeNavigation();
-            }
-
-            // 2. Inject Main Content
-            if (homepageHtml && mainContentArea) {
-                mainContentArea.innerHTML = homepageHtml;
-                fixRelativeLinks();
-                // Initialize homepage-specific observers/scripts
-                document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-                initializeSlideshow();
-            }
-
-            // 3. Inject Footer (Now guaranteed to be after content)
-            if (footerHtml) {
-                document.getElementById('global-footer').innerHTML = footerHtml;
-                fixRelativeLinks();
-                const yearSpan = document.getElementById("current-year");
-                if (yearSpan) yearSpan.textContent = new Date().getFullYear();
-
-                // 4. Auto-lift Theme Toggle over Footer
-                const copyrightBar = document.querySelector('.copyright-bar');
-                const themeBtn = document.getElementById('theme-toggle');
-
-                if (copyrightBar && themeBtn) {
-                    const footerObserver = new IntersectionObserver((entries) => {
-                        const entry = entries[0];
-                        // If copyright bar is visible, add 'lift-up' class
-                        if (entry.isIntersecting) {
-                            themeBtn.classList.add('lift-up');
-                        } else {
-                            themeBtn.classList.remove('lift-up');
-                        }
-                    }, {
-                        root: null,
-                        threshold: 0.1
-                    });
-
-                    footerObserver.observe(copyrightBar);
-                }
-
-            }
-
-        } catch (error) {
-            console.error("Error loading components:", error);
-        }
-    };
-
-    // 6. NAVIGATION LOGIC
+    // --- 5. NAVIGATION ---
     const initializeNavigation = () => {
         const currentPath = window.location.pathname.split('/').pop() || 'index.html';
+        const navList = document.querySelector(".nav-list");
+        const menuBtn = document.querySelector(".mobile-menu-toggle");
+        const sidebarOverlay = document.getElementById("sidebar-overlay");
 
+        // Set Active Links
         document.querySelectorAll(".nav-list a").forEach(link => {
-            const linkHref = link.getAttribute("href");
-            const linkFile = linkHref ? linkHref.split('/').pop() : '';
+            const href = link.getAttribute("href");
+            if (!href) return;
+            const linkFile = href.split('/').pop();
 
             if (linkFile === currentPath) {
                 link.classList.add("active");
-
-                const parentSubmenu = link.closest(".has-submenu");
-                if (parentSubmenu) {
-                    const submenuTrigger = parentSubmenu.querySelector(":scope > a");
-                    if (submenuTrigger) submenuTrigger.classList.add("active");
-                }
-                const mainNavItem = link.closest(".nav-item");
-                if (mainNavItem) {
-                    const mainNavTrigger = mainNavItem.querySelector(".nav-link");
-                    if (mainNavTrigger) mainNavTrigger.classList.add("active");
-                }
+                // Highlight parents
+                link.closest(".has-submenu")?.querySelector(":scope > a")?.classList.add("active");
+                link.closest(".nav-item")?.querySelector(".nav-link")?.classList.add("active");
             }
         });
 
-        const menuBtn = document.querySelector(".mobile-menu-toggle");
-        const navList = document.querySelector(".nav-list");
-        const sidebarOverlay = document.getElementById("sidebar-overlay");
-
+        // Mobile Menu Logic
         if (menuBtn && navList) {
             const toggleMenu = (forceClose) => {
                 const isActive = forceClose ? false : !navList.classList.contains("active");
-
-                // Toggle classes immediately so animation starts
                 navList.classList.toggle("active", isActive);
                 menuBtn.classList.toggle("active", isActive);
                 if (sidebarOverlay) sidebarOverlay.classList.toggle("active", isActive);
 
-                // Handle Body Scroll Smoothly
-                if (isActive) {
-                    // LOCK immediately when opening
-                    document.body.style.overflow = "hidden";
-                } else {
-                    // UNLOCK after animation ends (300ms matches mobile.css transition)
-                    setTimeout(() => {
-                        // Double-check sidebar is still closed before unlocking
-                        // (Prevents bugs if user clicks open/close very fast)
-                        if (!navList.classList.contains("active")) {
-                            document.body.style.overflow = "";
-                        }
-                    }, 300);
-                }
+                // Scroll Lock
+                document.body.style.overflow = isActive ? "hidden" : "";
             };
 
             menuBtn.onclick = (e) => { e.stopPropagation(); toggleMenu(); };
             if (sidebarOverlay) sidebarOverlay.onclick = () => toggleMenu(true);
 
+            // Dropdown Toggles on Mobile
             navList.onclick = (e) => {
                 const link = e.target.closest("a");
                 if (!link) return;
-
-                // Don't close sidebar when clicking Theme Toggle
                 if (link.id === "mobile-theme-toggle") return;
 
-                const nextSibling = link.nextElementSibling;
-                if (nextSibling && (nextSibling.matches('.dropdown-menu') || nextSibling.matches('.dropdown-submenu'))) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    link.parentElement.classList.toggle("dropdown-active");
+                const nextEl = link.nextElementSibling;
+                // Check if it's a dropdown trigger
+                if (nextEl && (nextEl.matches('.dropdown-menu') || nextEl.matches('.dropdown-submenu'))) {
+                    if (window.innerWidth <= 1024) { // Only prevent default on mobile
+                        e.preventDefault();
+                        e.stopPropagation();
+                        link.parentElement.classList.toggle("dropdown-active");
+                    }
                 } else {
-                    // Close sidebar for normal links
+                    // It's a regular link, close menu
                     toggleMenu(true);
                 }
             };
         }
     };
 
+    // --- 6. FOOTER INTERACTIONS (Theme Lift, etc) ---
+    const initFooterInteractions = () => {
+        const copyrightBar = document.querySelector('.copyright-bar');
+        const themeBtn = document.getElementById('theme-toggle');
+
+        if (copyrightBar && themeBtn) {
+            const footerObserver = new IntersectionObserver(([entry]) => {
+                themeBtn.classList.toggle('lift-up', entry.isIntersecting);
+            }, { threshold: 0.1 });
+
+            footerObserver.observe(copyrightBar);
+        }
+    };
+
+    // --- 7. GLOBAL ACCORDION LOGIC ---
+    const initializeAccordions = () => {
+        // We use event delegation on the document body
+        // This handles clicks for existing AND future elements
+        document.body.addEventListener('click', (e) => {
+            const toggle = e.target.closest('.expand-toggle');
+
+            if (toggle) {
+                // Toggle the button state
+                toggle.classList.toggle('active');
+
+                // Find the content area (next sibling)
+                const content = toggle.parentElement.querySelector('.expand-area');
+
+                if (content) {
+                    content.classList.toggle('open');
+                }
+            }
+        });
+    };
+
+    // --- START ---
     loadComponents();
+    initializeAccordions();
 });
 
-/* Sticky header scroll correction */
+// --- GLOBAL HELPERS (Outside DOMContentLoaded) ---
 
-if ('scrollRestoration' in history) {
-    history.scrollRestoration = 'manual';
-}
-
-function getHeaderHeight() {
+// Sticky Header Logic
+let resizeTimer;
+const syncHeaderHeight = () => {
     const header = document.querySelector('.glass-nav');
-    return header ? header.offsetHeight : 0;
-}
+    if (header) {
+        document.documentElement.style.setProperty('--mobile-header-height', `${header.offsetHeight}px`);
+    }
+};
 
-function syncHeaderHeight() {
-    const height = getHeaderHeight();
-    document.documentElement.style.setProperty(
-        '--mobile-header-height',
-        height + 'px'
-    );
-}
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(syncHeaderHeight, 100);
+});
+window.addEventListener('orientationchange', syncHeaderHeight);
 
-let scrollAdjusted = false;
+// Scroll Correction for Hash Links
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
 window.addEventListener('load', () => {
-    if (scrollAdjusted) return;
-    scrollAdjusted = true;
-
     syncHeaderHeight();
-    const headerHeight = getHeaderHeight();
-
     if (location.hash) {
-        const target = document.querySelector(location.hash);
-        if (target) {
-            const y =
-                target.getBoundingClientRect().top +
-                window.scrollY -
-                headerHeight -
-                8;
-
-            window.scrollTo(0, Math.max(0, y));
-        }
+        setTimeout(() => {
+            const target = document.querySelector(location.hash);
+            if (target) {
+                const offset = getComputedStyle(document.documentElement).getPropertyValue('--mobile-header-height');
+                const headerH = parseInt(offset) || 60;
+                const top = target.getBoundingClientRect().top + window.scrollY - headerH - 10;
+                window.scrollTo({ top: top, behavior: 'smooth' });
+            }
+        }, 100);
     }
 });
-
-window.addEventListener('resize', syncHeaderHeight);
-window.addEventListener('orientationchange', syncHeaderHeight);

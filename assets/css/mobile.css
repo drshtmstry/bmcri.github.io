@@ -819,6 +819,64 @@
   .slide-btn.next {
     right: 10px;
   }
+  /* --- Document List & Accordion Mobile Adjustments --- */
+  .doc-list {
+    gap: 10px;
+  }
+  .doc-link-card {
+    /* Switch back to row layout to keep icon next to text */
+    flex-direction: row !important;
+    align-items: flex-start; /* Align to top so long text doesn't center the icon weirdly */
+    gap: 15px;
+    padding: 15px 15px 15px 15px; /* Tighter padding */
+  }
+
+  /* Shrink the icon */
+  .doc-icon {
+    width: 36px; /* Smaller width (was 48px) */
+    height: 36px; /* Smaller height */
+    font-size: 0.9rem; /* Smaller icon symbol */
+    margin-right: 0; /* Remove right margin as gap handles spacing */
+    margin-top: 2px; /* Visual alignment with the first line of text */
+  }
+
+  /* Adjust text wrapper width */
+  .doc-info {
+    width: auto; /* Let it take available space */
+    flex: 1; /* Grow to fill space */
+    padding-right: 25px; /* Make room for the chevron/arrow */
+  }
+
+  /* Reduce title size slightly */
+  .doc-title {
+    font-size: 0.95rem; /* Slightly smaller for better fit */
+    margin-bottom: 2px;
+  }
+
+  /* Ensure the chevron stays in the top-right corner */
+  .doc-action {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 1rem;
+  }
+
+  /* Active state mobile adjustment */
+  .doc-link-card.active {
+    padding-left: 11px !important; /* 15px - 4px border */
+  }
+  .doc-link-card:hover,
+  .doc-link-card.active,
+  .doc-link-card:active {
+    /* Stop the card from moving up on tap */
+    transform: none !important;
+
+    /* Keep the shadow consistent (don't expand it like desktop) */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05) !important;
+
+    /* Ensure border color still changes so they know they clicked it */
+    border-color: var(--primary);
+  }
 
   /* --- Footer & Misc --- */
   .copyright-bar {
