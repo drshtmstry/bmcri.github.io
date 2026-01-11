@@ -621,6 +621,7 @@
     margin-bottom: 5px !important;
   }
   .main-content {
+    margin-top: var(--header-height);
     padding: 30px 20px 30px;
   }
   .content-title {

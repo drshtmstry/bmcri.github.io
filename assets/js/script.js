@@ -295,7 +295,7 @@ let resizeTimer;
 const syncHeaderHeight = () => {
     const header = document.querySelector('.glass-nav');
     if (header) {
-        document.documentElement.style.setProperty('--mobile-header-height', `${header.offsetHeight}px`);
+        document.documentElement.style.setProperty('--header-height', `${header.offsetHeight}px`);
     }
 };
 
@@ -314,7 +314,7 @@ window.addEventListener('load', () => {
         setTimeout(() => {
             const target = document.querySelector(location.hash);
             if (target) {
-                const offset = getComputedStyle(document.documentElement).getPropertyValue('--mobile-header-height');
+                const offset = getComputedStyle(document.documentElement).getPropertyValue('--header-height');
                 const headerH = parseInt(offset) || 60;
                 const top = target.getBoundingClientRect().top + window.scrollY - headerH - 10;
                 window.scrollTo({ top: top, behavior: 'smooth' });

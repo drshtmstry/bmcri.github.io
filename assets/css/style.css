@@ -13,7 +13,6 @@
   --font-body: "Montserrat", sans-serif;
   --radius: 16px;
   --header-height: 60px;
-  --mobile-header-height: 60px;
 }
 [data-theme="light"] {
   --bg-body: #f0f2f5;
@@ -311,7 +310,7 @@ button {
 }
 #global-header {
   min-height: 80px;
-  display: block;
+  display: contents;
   position: relative;
 }
 .top-bar {
