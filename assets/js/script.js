@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- CONFIGURATION ---
     const CONFIG = {
         slideshowUrl: "assets/slideshow/slideshow.json", // Path relative to site root
-        useCache: true,
+        //    useCache: true,
         baseUrl: getBaseUrl() // Auto-calculated base
     };
 

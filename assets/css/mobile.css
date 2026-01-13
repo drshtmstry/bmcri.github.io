@@ -61,7 +61,8 @@
     top: 0;
     left: 0;
     width: 100%;
-    height: var(--header-height);
+    height: auto;
+    min-height: 60px;
     padding: 0;
     background: rgba(var(--bg-card-rgb), 0.95);
     backdrop-filter: blur(10px);
@@ -71,9 +72,12 @@
   }
 
   .nav-container {
-    justify-content: flex-start;
+    display: flex !important;
+    min-height: 60px !important;
     gap: 10px;
     height: 100%;
+    align-items: center !important;
+    justify-content: flex-start;
   }
 
   /* --- Branding --- */
