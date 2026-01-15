@@ -371,38 +371,34 @@
         function openLightbox(index, element) {
             currentIndex = index;
 
-            // 1. Handle Card Hover Effects
+            // Handle hover locking
             if (currentActiveCard) currentActiveCard.classList.remove('locked-hover');
-            if (element) {
-                element.classList.add('locked-hover');
-                currentActiveCard = element;
-            }
+            if (element) { element.classList.add('locked-hover'); currentActiveCard = element; }
 
-            // 2. INSTANT RESET (Fix for Mobile Flicker)
-            // Disable transition so it disappears instantly
-            lightboxImg.classList.add('notransition');
-            // Remove visibility class
-            lightboxImg.classList.remove('visible');
-            // Force hide
+            // --- FIX START: Hard Reset for Android ---
+            // 1. Instantly hide the image element so it can't render the old photo
             lightboxImg.style.visibility = 'hidden';
-            // Clear source (using a tiny transparent gif works better on Android than empty string)
-            lightboxImg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+            lightboxImg.style.opacity = '0';
+            lightboxImg.classList.remove('visible');
 
-            // 3. Force Browser Repaint (Crucial for Android)
-            // This line forces the browser to process the 'hidden' state immediately
+            // 2. Wipe the source. 
+            // This ensures that even if the browser tries to render, there is nothing there.
+            lightboxImg.src = "";
+
+            // 3. Force the browser to process these changes NOW (Reflow)
             void lightboxImg.offsetWidth;
+            // --- FIX END ---
 
-            // 4. Show Lightbox Container
+            // Now it is safe to show the black background
             lightbox.classList.add('active');
             document.documentElement.style.overflow = 'hidden';
             document.body.style.overflow = 'hidden';
 
-            // 5. Load New Image
-            // Re-enable transitions only after we start loading the new one
-            setTimeout(() => {
-                lightboxImg.classList.remove('notransition');
+            // Start loading the new image
+            // Small delay ensures the 'src=""' has definitely taken effect on slower phones
+            requestAnimationFrame(() => {
                 loadImage(galleryImages[currentIndex]);
-            }, 10);
+            });
         }
 
         function loadImage(src) {
@@ -435,15 +431,29 @@
         }
 
         function closeLightbox(e) {
+            // Check if the click was on the background or the close button
             if (!e || e.target === lightbox || e.target.classList.contains('lightbox-close')) {
+
                 lightbox.classList.remove('active');
                 document.documentElement.style.overflow = '';
                 document.body.style.overflow = '';
+
+                // Hide the image immediately so it fades out with the container
                 lightboxImg.classList.remove('visible');
+
                 if (currentActiveCard) {
-                    setTimeout(() => { currentActiveCard.classList.remove('locked-hover'); currentActiveCard = null; }, 300);
+                    setTimeout(() => {
+                        currentActiveCard.classList.remove('locked-hover');
+                        currentActiveCard = null;
+                    }, 300);
                 }
-                setTimeout(() => { lightboxImg.src = ''; lightboxLoader.style.display = 'none'; }, 300);
+
+                // Reset everything after the fade-out animation is done
+                setTimeout(() => {
+                    lightboxImg.src = '';
+                    lightboxImg.style.visibility = 'hidden';
+                    lightboxLoader.classList.add('hidden'); // Ensure loader is hidden
+                }, 300);
             }
         }
 
