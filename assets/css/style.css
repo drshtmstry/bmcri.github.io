@@ -699,7 +699,7 @@ textarea {
 .main-content {
   padding-top: 40px;
   padding-bottom: 40px;
-  min-height: 90vh;
+  min-height: 50vh;
   flex: 1; /* Pushes footer down */
 }
 .btn {
@@ -895,6 +895,12 @@ textarea {
 }
 .card-tint-purple .icon-circle-bg {
   background: linear-gradient(135deg, #a855f7, #7e22ce);
+}
+/* Stop hover movement on accent/tinted cards */
+.card-tint-red:hover,
+.card-tint-teal:hover,
+.card-tint-purple:hover {
+  transform: none !important;
 }
 .hero-grid {
   display: grid;

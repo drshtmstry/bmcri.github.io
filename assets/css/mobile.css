@@ -250,10 +250,7 @@
   }
 
   .mobile-quick-links a.highlight-link {
-    background: rgba(59, 130, 246, 0.1);
-    border-color: rgba(59, 130, 246, 0.3);
     color: var(--accent) !important;
-    font-weight: 700;
   }
 
   .mobile-footer-actions {
@@ -320,7 +317,7 @@
       background: var(--accent);
       color: #fff !important;
       border-color: var(--accent);
-      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25);
     }
 
     #footer-theme-btn.btn-glass-sm:hover {
@@ -627,6 +624,7 @@
   .main-content {
     margin-top: var(--header-height);
     padding: 30px 20px 30px;
+    min-height: auto;
   }
   .content-title {
     margin-bottom: 10px;
