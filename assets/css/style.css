@@ -92,15 +92,7 @@ button {
 .text-center {
   text-align: center;
 }
-.dept-description {
-  text-align: center;
-  margin-bottom: 30px;
-  color: var(--text-secondary);
-  max-width: 900px;
-  margin-left: auto;
-  margin-right: auto;
-  line-height: 1.8;
-}
+
 /* --- Department Page Overrides --- */
 
 /* Force cards to align left (overrides global .card text-align:center) */
@@ -123,7 +115,15 @@ button {
   margin: 0;
   font-size: 1.3rem;
 }
-
+.dept-description {
+  text-align: center;
+  margin-bottom: 30px;
+  color: var(--text-secondary);
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.8;
+}
 .icon-circle-bg.icon-sm {
   width: 45px;
   height: 45px;
