@@ -120,6 +120,11 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
+        /* Add this to your style block */
+        .notransition {
+            transition: none !important;
+        }
+
         /* ---------- CIRCULAR LOADER ---------- */
         .loader {
             position: absolute;
@@ -365,22 +370,68 @@
 
         function openLightbox(index, element) {
             currentIndex = index;
+
+            // 1. Handle Card Hover Effects
             if (currentActiveCard) currentActiveCard.classList.remove('locked-hover');
-            if (element) { element.classList.add('locked-hover'); currentActiveCard = element; }
+            if (element) {
+                element.classList.add('locked-hover');
+                currentActiveCard = element;
+            }
 
-            // --- Reset image state BEFORE showing lightbox ---
+            // 2. INSTANT RESET (Fix for Mobile Flicker)
+            // Disable transition so it disappears instantly
+            lightboxImg.classList.add('notransition');
+            // Remove visibility class
             lightboxImg.classList.remove('visible');
+            // Force hide
             lightboxImg.style.visibility = 'hidden';
-            lightboxImg.src = "";
+            // Clear source (using a tiny transparent gif works better on Android than empty string)
+            lightboxImg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
-            lightbox.classList.add('active'); // Now show the container
+            // 3. Force Browser Repaint (Crucial for Android)
+            // This line forces the browser to process the 'hidden' state immediately
+            void lightboxImg.offsetWidth;
+
+            // 4. Show Lightbox Container
+            lightbox.classList.add('active');
             document.documentElement.style.overflow = 'hidden';
             document.body.style.overflow = 'hidden';
 
-            // Slight delay to allow CSS to reset before starting load
-            requestAnimationFrame(() => {
+            // 5. Load New Image
+            // Re-enable transitions only after we start loading the new one
+            setTimeout(() => {
+                lightboxImg.classList.remove('notransition');
                 loadImage(galleryImages[currentIndex]);
-            });
+            }, 10);
+        }
+
+        function loadImage(src) {
+            // Show Loader
+            lightboxLoader.classList.remove('hidden');
+
+            // Create virtual image to preload
+            const pre = new Image();
+            pre.src = src;
+
+            const showImage = () => {
+                lightboxImg.src = src;
+
+                // Use double requestAnimationFrame for smoothest mobile animation
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        lightboxLoader.classList.add('hidden');
+                        lightboxImg.style.visibility = 'visible';
+                        lightboxImg.classList.add('visible');
+                    });
+                });
+            };
+
+            // Attempt decode (modern) or fallback to onload (legacy)
+            if (pre.decode) {
+                pre.decode().then(showImage).catch(showImage);
+            } else {
+                pre.onload = showImage;
+            }
         }
 
         function closeLightbox(e) {
@@ -399,33 +450,6 @@
         function changeSlide(dir) {
             currentIndex = (currentIndex + dir + galleryImages.length) % galleryImages.length;
             loadImage(galleryImages[currentIndex]);
-        }
-
-        function loadImage(src) {
-            lightboxLoader.classList.remove('hidden');
-
-            // Just hide visually, don't clear src here (avoids layout collapse during next/prev)
-            lightboxImg.classList.remove('visible');
-            lightboxImg.style.visibility = 'hidden';
-
-            const pre = new Image();
-            pre.src = src;
-
-            pre.decode().then(() => {
-                lightboxImg.src = src;
-                requestAnimationFrame(() => {
-                    lightboxLoader.classList.add('hidden');
-                    lightboxImg.classList.add('visible');
-                    lightboxImg.style.visibility = 'visible';
-                });
-            }).catch(() => {
-                pre.onload = () => {
-                    lightboxImg.src = src;
-                    lightboxLoader.classList.add('hidden');
-                    lightboxImg.classList.add('visible');
-                    lightboxImg.style.visibility = 'visible';
-                };
-            });
         }
 
         document.addEventListener('keydown', (e) => {
