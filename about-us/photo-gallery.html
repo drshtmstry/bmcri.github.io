@@ -23,11 +23,6 @@
 
     <script src="../assets/js/theme.js"></script>
     <style>
-        /* Add this to your CSS */
-        .no-transition {
-            transition: none !important;
-        }
-
         /* --- GRID & CARDS --- */
         .gallery-grid {
             display: grid;
@@ -130,29 +125,6 @@
         .notransition {
             transition: none !important;
         }
-
-        /* ---------- CIRCULAR LOADER ---------- */
-        .loader {
-            position: absolute;
-            width: 64px;
-            height: 64px;
-            border: 6px solid rgba(255, 255, 255, 0.25);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            z-index: 10;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        .hidden {
-            display: none;
-        }
-
 
         /* --- CONTROLS --- */
         .lightbox-nav {
@@ -350,7 +322,6 @@
                 class="fa-solid fa-chevron-left"></i></button>
         <button class="lightbox-nav lightbox-next" onclick="changeSlide(1)"><i
                 class="fa-solid fa-chevron-right"></i></button>
-        <div id="lightbox-loader" class="loader hidden"></div>
         <img id="lightbox-img" class="lightbox-content" src="" alt="Full Screen View">
     </div>
 
@@ -381,31 +352,28 @@
             if (currentActiveCard) currentActiveCard.classList.remove('locked-hover');
             if (element) { element.classList.add('locked-hover'); currentActiveCard = element; }
 
-            // 2. DISABLE ANIMATION & HIDE INSTANTLY
-            // This stops the "fade out" animation from playing while the lightbox fades in
-            lightboxImg.classList.add('no-transition');
-
-            // 3. Reset Image State
+            // 2. KILL THE OLD IMAGE (The Fix)
+            // 'display: none' is the only way to stop a CSS transition instantly.
+            lightboxImg.style.display = 'none';
+            lightboxImg.src = "";
             lightboxImg.classList.remove('visible');
-            lightboxImg.style.opacity = '0'; // Ensure it's invisible
-            lightboxImg.src = "";            // Wipe the source
 
-            // 4. Show Lightbox Container
+            // 3. Show Lightbox Container
             lightbox.classList.add('active');
             document.documentElement.style.overflow = 'hidden';
             document.body.style.overflow = 'hidden';
 
-            // 5. Start Loading New Image
-            requestAnimationFrame(() => {
-                loadImage(galleryImages[currentIndex]);
-            });
+            // 4. Start Loading New Image
+            // We don't need delays anymore because display:none is instant.
+            loadImage(galleryImages[currentIndex]);
         }
 
         function loadImage(src) {
             // Show Loader
             lightboxLoader.classList.remove('hidden');
 
-            // NOTE: We do NOT hide the image here (keeps Next/Prev smooth)
+            // DO NOT hide the image here.
+            // Leaving it visible ensures Next/Prev buttons swap images instantly without a black flash.
 
             const pre = new Image();
             pre.src = src;
@@ -416,13 +384,15 @@
                 requestAnimationFrame(() => {
                     lightboxLoader.classList.add('hidden');
 
-                    // 1. RE-ENABLE ANIMATIONS (so the new image fades in smoothly)
-                    lightboxImg.classList.remove('no-transition');
+                    // 1. RESTORE LAYOUT (Undo the display:none from opening)
+                    lightboxImg.style.display = 'block';
 
-                    // 2. Make Visible
-                    lightboxImg.style.opacity = ''; // Remove inline opacity override
-                    lightboxImg.style.visibility = 'visible';
-                    lightboxImg.classList.add('visible');
+                    // 2. TRIGGER FADE IN
+                    // We use a slight delay to ensure the browser sees "display: block" first
+                    requestAnimationFrame(() => {
+                        lightboxImg.style.visibility = 'visible';
+                        lightboxImg.classList.add('visible');
+                    });
                 });
             };
 
