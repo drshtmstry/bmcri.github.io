@@ -118,6 +118,29 @@
             transform: scale(1);
         }
 
+        /* ---------- CIRCULAR LOADER ---------- */
+        .loader {
+            position: absolute;
+            width: 64px;
+            height: 64px;
+            border: 6px solid rgba(255, 255, 255, 0.25);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            z-index: 10;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+
         /* --- CONTROLS --- */
         .lightbox-nav {
             position: absolute;
@@ -314,6 +337,7 @@
                 class="fa-solid fa-chevron-left"></i></button>
         <button class="lightbox-nav lightbox-next" onclick="changeSlide(1)"><i
                 class="fa-solid fa-chevron-right"></i></button>
+        <div id="lightbox-loader" class="loader hidden"></div>
         <img id="lightbox-img" class="lightbox-content" src="" alt="Full Screen View">
     </div>
 
@@ -367,11 +391,21 @@
         }
 
         function loadImage(src) {
-            lightboxLoader.style.display = 'block';
+            lightboxLoader.classList.remove('hidden');
             lightboxImg.classList.remove('visible');
-            lightboxImg.src = src;
-            lightboxImg.onload = () => { lightboxLoader.style.display = 'none'; lightboxImg.classList.add('visible'); };
-            if (lightboxImg.complete) { lightboxLoader.style.display = 'none'; lightboxImg.classList.add('visible'); }
+
+            const pre = new Image();
+
+            pre.onload = () => {
+                lightboxImg.src = src;
+
+                requestAnimationFrame(() => {
+                    lightboxLoader.classList.add('hidden');
+                    lightboxImg.classList.add('visible');
+                });
+            };
+
+            pre.src = src;
         }
 
         document.addEventListener('keydown', (e) => {
