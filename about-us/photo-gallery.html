@@ -368,10 +368,19 @@
             if (currentActiveCard) currentActiveCard.classList.remove('locked-hover');
             if (element) { element.classList.add('locked-hover'); currentActiveCard = element; }
 
-            lightbox.classList.add('active');
+            // --- Reset image state BEFORE showing lightbox ---
+            lightboxImg.classList.remove('visible');
+            lightboxImg.style.visibility = 'hidden';
+            lightboxImg.src = "";
+
+            lightbox.classList.add('active'); // Now show the container
             document.documentElement.style.overflow = 'hidden';
             document.body.style.overflow = 'hidden';
-            loadImage(galleryImages[currentIndex]);
+
+            // Slight delay to allow CSS to reset before starting load
+            requestAnimationFrame(() => {
+                loadImage(galleryImages[currentIndex]);
+            });
         }
 
         function closeLightbox(e) {
@@ -393,27 +402,23 @@
         }
 
         function loadImage(src) {
-            // Show loader
             lightboxLoader.classList.remove('hidden');
 
-            // Hide image while loading (but keep the old src to avoid layout collapse)
+            // Just hide visually, don't clear src here (avoids layout collapse during next/prev)
             lightboxImg.classList.remove('visible');
             lightboxImg.style.visibility = 'hidden';
 
             const pre = new Image();
             pre.src = src;
 
-            // Decode before attaching to DOM image
             pre.decode().then(() => {
                 lightboxImg.src = src;
-
                 requestAnimationFrame(() => {
                     lightboxLoader.classList.add('hidden');
                     lightboxImg.classList.add('visible');
                     lightboxImg.style.visibility = 'visible';
                 });
             }).catch(() => {
-                // Fallback (older browsers)
                 pre.onload = () => {
                     lightboxImg.src = src;
                     lightboxLoader.classList.add('hidden');
