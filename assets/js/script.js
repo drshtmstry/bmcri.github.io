@@ -110,87 +110,69 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     };
 
-    // ==========================================
-    // 5. REVISED SLIDESHOW LOGIC
-    // ==========================================
+    // --- 5. REVISED SLIDESHOW LOGIC ---
     const initializeSlideshow = async () => {
         const container = document.getElementById("dynamic-slideshow");
         if (!container) return;
 
         try {
+            // 1. Identify the hardcoded image to avoid duplication
+            // We look for the image src inside the existing active slide
+            const existingSlide = container.querySelector(".hero-slide.active img");
+            const existingSrc = existingSlide ? existingSlide.getAttribute("src") : "";
+
             const response = await fetch(CONFIG.baseUrl + CONFIG.slideshowUrl);
             if (!response.ok) return;
 
             let rawImages = await response.json();
-            let finalImages = [];
 
-            // --- SORTING LOGIC ---
-            // 1. Find medicalclg1 (support .webp or .jpg)
-            const firstIndex = rawImages.findIndex(img => img.includes("medicalclg1"));
+            // 2. Filter out the image that is already in the HTML
+            // We check if the existing src includes the filename from JSON
+            let finalImages = rawImages.filter(img => !existingSrc.includes(img));
 
-            if (firstIndex > -1) {
-                // Extract it
-                const firstSlide = rawImages.splice(firstIndex, 1)[0];
-
-                // Shuffle the rest
-                for (let i = rawImages.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [rawImages[i], rawImages[j]] = [rawImages[j], rawImages[i]];
-                }
-
-                // Combine: First + Shuffled Rest
-                finalImages = [firstSlide, ...rawImages];
-            } else {
-                // Fallback: just shuffle everything
-                finalImages = rawImages;
-                for (let i = finalImages.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [finalImages[i], finalImages[j]] = [finalImages[j], finalImages[i]];
-                }
+            // 3. Shuffle the REMAINING images
+            for (let i = finalImages.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [finalImages[i], finalImages[j]] = [finalImages[j], finalImages[i]];
             }
 
-            // --- RENDER SLIDES ---
+            // 4. Render only the NEW slides
             const overlay = container.querySelector(".slide-overlay");
-            finalImages.forEach((src, index) => {
-                const slide = document.createElement("div");
-                slide.className = `hero-slide ${index === 0 ? "active" : ""}`;
 
-                // Use correct base URL path
+            finalImages.forEach((src) => {
+                const slide = document.createElement("div");
+                slide.className = "hero-slide"; // No 'active' class, the HTML one has it
+
                 const fullSrc = `${CONFIG.baseUrl}assets/slideshow/${src}`;
 
-                // High priority for first image
-                const priority = index === 0 ? 'fetchpriority="high"' : 'loading="lazy"';
-                slide.innerHTML = `<img src="${fullSrc}" alt="Slide" ${priority}>`;
+                // All dynamic slides are secondary, so lazy load them
+                slide.innerHTML = `<img src="${fullSrc}" alt="Slide" loading="lazy">`;
 
                 container.insertBefore(slide, overlay);
             });
 
-            // --- TIMING LOGIC ---
-            let currentIndex = 0;
+            // 5. Start the Logic (Controls & Timer)
+            // We re-query the DOM to include BOTH the hardcoded slide and the new ones
             const slides = container.querySelectorAll(".hero-slide");
+            let currentIndex = 0; // Starts at 0 (the hardcoded one)
             let timer = null;
 
             const showNextSlide = () => {
                 slides[currentIndex].classList.remove("active");
                 currentIndex = (currentIndex + 1) % slides.length;
                 slides[currentIndex].classList.add("active");
-
                 scheduleNext();
             };
 
             const scheduleNext = () => {
                 if (timer) clearTimeout(timer);
-
-                // RULE: If showing slide 0 (first one), wait 5000ms.
-                // For all others, wait 3000ms.
+                // Wait 5s for the first slide, 3s for the rest
                 const delay = currentIndex === 0 ? 5000 : 3000;
-
                 timer = setTimeout(showNextSlide, delay);
             };
 
-            // Start the loop
+            // Start the loop if we have more than 1 slide (1 hardcoded + others)
             if (slides.length > 1) {
-                // Initial schedule (current is 0, so it will wait 5000ms before moving)
                 scheduleNext();
 
                 // Controls

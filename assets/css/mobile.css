@@ -354,7 +354,7 @@
     width: 40px;
     height: 40px;
     font-size: 1.1rem;
-    margin: 0 8px;
+    margin: 0;
     border-radius: 50%;
     border: 1px solid rgba(59, 130, 246, 0.5) !important;
     background: rgba(59, 130, 246, 0.05);
@@ -379,6 +379,14 @@
     color: #fff !important;
     transform: scale(0.95);
     box-shadow: none;
+  }
+  .mobile-footer-actions .social-mini a:hover,
+  .mobile-footer-actions .social-mini a:focus {
+    background: rgba(59, 130, 246, 0.05) !important;
+    border-color: rgba(59, 130, 246, 0.5) !important;
+    color: var(--text-main) !important;
+    transform: none !important;
+    box-shadow: none !important;
   }
 
   .mobile-footer-divider {

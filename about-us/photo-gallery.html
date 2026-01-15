@@ -60,7 +60,7 @@
 
         /* Hover Effects */
         .gallery-item:hover {
-            transform: translateY(-6px);
+            transform: scale(1.05);
             border-color: var(--primary);
             box-shadow: 0 12px 30px rgba(59, 130, 246, 0.25);
         }
@@ -190,6 +190,11 @@
                     </div>
 
                     <div class="gallery-item" onclick="openLightbox(this)">
+                        <img src="../uploads/photo-gallery/Banas-Medical-College-Palanpur.webp" alt="Campus">
+                        <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i></div>
+                    </div>
+
+                    <div class="gallery-item" onclick="openLightbox(this)">
                         <img src="../uploads/photo-gallery/unnamed (3).jpg" alt="Gallery Photo 3">
                         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i></div>
                     </div>
@@ -273,31 +278,46 @@
     <script src="../assets/js/script.js" defer></script>
 
     <script>
-        /* --- Lightbox Logic Only --- */
+        /* --- Lightbox Logic --- */
         const lightbox = document.getElementById('lightbox');
         const lightboxImg = document.getElementById('lightbox-img');
 
         function openLightbox(element) {
             const img = element.querySelector('img');
+
+            // 1. Set the source
             lightboxImg.src = img.src;
-            lightbox.classList.add('active');
-            document.body.style.overflow = 'hidden';
+
+            // 2. Wait for the image to acknowledge it is loaded/ready before showing
+            lightboxImg.onload = () => {
+                lightbox.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            };
+
+            // Check if complete, then show immediately.
+            if (lightboxImg.complete) {
+                lightbox.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
         }
 
         function closeLightbox(event) {
+            // Only close if clicking the background or the X button
             if (event.target !== lightboxImg) {
                 lightbox.classList.remove('active');
                 document.body.style.overflow = '';
+
+                // Clear source ONLY after the fade-out animation (300ms) finishes
                 setTimeout(() => {
                     lightboxImg.src = '';
                 }, 300);
             }
         }
 
+        // Close on Escape key
         document.addEventListener('keydown', function (event) {
             if (event.key === "Escape" && lightbox.classList.contains('active')) {
-                lightbox.classList.remove('active');
-                document.body.style.overflow = '';
+                closeLightbox({ target: lightbox });
             }
         });
     </script>
