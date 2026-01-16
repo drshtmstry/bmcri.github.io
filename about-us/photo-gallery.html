@@ -1,61 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Photo Gallery - BMCRI</title>
-
-    <link rel="icon" href="../assets/favicon.ico" sizes="32x32">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-    <link rel="preload" href="../assets/css/style.css" as="style">
-    <link rel="preload" href="../assets/css/mobile.css" as="style">
-    <link rel="preload" href="../assets/js/script.js" as="script">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@500;700&family=Montserrat:wght@300;400;500;600&display=swap"
-        rel="stylesheet">
+    
+    <link rel="icon" href="../assets/favicon.ico">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-
     <link rel="stylesheet" href="../assets/css/style.css">
-    <link rel="stylesheet" href="../assets/css/mobile.css">
-
-    <script src="../assets/js/theme.js"></script>
+    
     <style>
-        /* --- GRID & CARDS --- */
+        /* --- 1. GRID LAYOUT --- */
         .gallery-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 25px;
-            padding: 10px;
+            gap: 20px;
+            padding: 20px 0;
+            will-change: transform; /* Hint for browser optimization */
         }
 
+        /* --- 2. CARD ITEM --- */
         .gallery-item {
             position: relative;
-            border-radius: var(--radius);
+            border-radius: 12px;
             overflow: hidden;
             aspect-ratio: 4/3;
-            border: 1px solid var(--border-color);
-            background: var(--bg-card);
-            backdrop-filter: blur(var(--card-blur));
+            background: #f0f0f0; /* Placeholder color while loading */
             cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-            box-shadow: var(--shadow-card);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
         .gallery-item img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.6s ease;
             display: block;
-            image-rendering: auto;
-            transform: translateZ(0);
-            backface-visibility: hidden;
+            transition: transform 0.5s ease;
+            backface-visibility: hidden; /* Fixes mobile flickering */
         }
 
-        /* --- OVERLAY & ICONS --- */
+        /* Hover Effects (Desktop Only) */
+        @media (hover: hover) {
+            .gallery-item:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+                z-index: 2;
+            }
+            .gallery-item:hover img {
+                transform: scale(1.08);
+            }
+            .gallery-item:hover .gallery-overlay {
+                opacity: 1;
+            }
+        }
+
+        /* --- 3. OVERLAY (Icon) --- */
         .gallery-overlay {
             position: absolute;
             inset: 0;
@@ -65,422 +65,240 @@
             justify-content: center;
             opacity: 0;
             transition: opacity 0.3s ease;
-            pointer-events: none;
         }
-
+        
         .gallery-overlay i {
             color: white;
             font-size: 2rem;
-            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
-            transform: scale(0.8);
-            transition: transform 0.3s ease;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
         }
 
-        /* --- LIGHTBOX --- */
+        /* --- 4. LIGHTBOX (Core Logic) --- */
         .lightbox {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            inset: 0;
             background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(8px);
             z-index: 10000;
             display: flex;
             align-items: center;
             justify-content: center;
+            
+            /* Hidden State */
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s;
-            touch-action: none;
-            overscroll-behavior: contain;
+            pointer-events: none;
+            transition: opacity 0.3s ease, visibility 0.3s;
         }
 
         .lightbox.active {
             opacity: 1;
             visibility: visible;
+            pointer-events: auto;
         }
 
-/* Update this specific section in your CSS */
-.lightbox-content {
-    max-width: 90%;
-    max-height: 85vh;
-    border-radius: 4px;
-    
-    /* Start completely hidden */
-    opacity: 0;
-    transform: scale(0.96); /* Reduced scale movement */
-    visibility: hidden; 
-    
-    /* Smooth transition */
-    transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-    
-    /* Fix for mobile flickering */
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    will-change: opacity, transform;
-}
-
-.lightbox-content.visible {
-    visibility: visible;
-    opacity: 1;
-    transform: scale(1);
-}
-
-        /* Add this to your style block */
-        .notransition {
-            transition: none !important;
+        /* The Image */
+        .lightbox-content {
+            max-width: 95%;
+            max-height: 85vh;
+            object-fit: contain;
+            border-radius: 4px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            
+            /* Anti-Flicker Animation State */
+            opacity: 0;
+            transform: scale(0.98);
+            visibility: hidden;
+            transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            
+            /* GPU Acceleration */
+            will-change: opacity, transform;
+            backface-visibility: hidden;
         }
 
-        /* ---------- CIRCULAR LOADER ---------- */
-        .loader {
+        .lightbox-content.visible {
+            opacity: 1;
+            transform: scale(1);
+            visibility: visible;
+        }
+
+        /* --- 5. CONTROLS (Buttons) --- */
+        .lb-btn {
             position: absolute;
-            width: 64px;
-            height: 64px;
-            border: 6px solid rgba(255, 255, 255, 0.25);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            z-index: 10;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        .hidden {
-            display: none;
-        }
-
-
-        /* --- CONTROLS --- */
-        .lightbox-nav {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.15);
             color: white;
             border: none;
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            font-size: 1.5rem;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            z-index: 10005;
-            backdrop-filter: blur(5px);
+            font-size: 1.2rem;
+            transition: background 0.2s, transform 0.2s;
+            z-index: 10001;
+            backdrop-filter: blur(4px);
         }
 
-        .lightbox-nav:hover {
-            background: var(--primary);
-            transform: translateY(-50%) scale(1.1);
+        .lb-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
         }
 
-        .lightbox-prev {
-            left: 20px;
-        }
-
-        .lightbox-next {
-            right: 20px;
-        }
-
-        .lightbox-close {
-            position: absolute;
+        .lb-prev { left: 20px; }
+        .lb-next { right: 20px; }
+        
+        .lb-close {
             top: 20px;
-            right: 30px;
-            color: white;
-            font-size: 3rem;
-            cursor: pointer;
-            opacity: 0.7;
-            transition: 0.2s;
-            z-index: 10005;
+            right: 20px;
+            background: transparent;
+            font-size: 2rem;
         }
+        .lb-close:hover { background: transparent; color: #ff6b6b; transform: rotate(90deg); }
 
-        .lightbox-close:hover {
-            opacity: 1;
-            color: var(--primary);
-        }
-
-        /* --- LOADER --- */
-        .lightbox-loader {
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            border-top: 4px solid var(--primary);
+        /* --- 6. LOADER --- */
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 5px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #fff;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
             animation: spin 1s linear infinite;
             position: absolute;
-            display: none;
-            z-index: 10002;
         }
+        .loader.hidden { display: none; }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* --- DESKTOP HOVER LOGIC --- */
-        @media (hover: hover) {
-
-            .gallery-item:hover,
-            .gallery-item.locked-hover {
-                transform: translateY(-6px);
-                border-color: var(--primary);
-                box-shadow: 0 12px 30px rgba(59, 130, 246, 0.25);
-                z-index: 10;
-            }
-
-            .gallery-item:hover img,
-            .gallery-item.locked-hover img {
-                transform: scale(1.1);
-            }
-
-            .gallery-item:hover .gallery-overlay,
-            .gallery-item.locked-hover .gallery-overlay {
-                opacity: 1;
-            }
-
-            .gallery-item:hover .gallery-overlay i,
-            .gallery-item.locked-hover .gallery-overlay i {
-                transform: scale(1);
-            }
-        }
-
-        /* --- MOBILE OPTIMIZATION --- */
+        /* Mobile Tweaks */
         @media (max-width: 768px) {
-            .gallery-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .gallery-overlay {
-                display: none;
-            }
-
-            .lightbox-content {
-                max-width: 95%;
-            }
-
-            /* Force Buttons Visible & Touch Friendly */
-            .lightbox-nav {
-                display: flex !important;
-                width: 40px;
-                height: 40px;
-                background: rgba(0, 0, 0, 0.3) !important;
-                border: 1px solid rgba(255, 255, 255, 0.2);
-            }
-
-            .lightbox-nav:hover {
-                background: rgba(0, 0, 0, 0.3) !important;
-                transform: translateY(-50%) !important;
-            }
-
-            .lightbox-nav:active {
-                background: var(--primary) !important;
-                transform: translateY(-50%) scale(0.9) !important;
-            }
+            .gallery-grid { grid-template-columns: 1fr; gap: 15px; }
+            .gallery-overlay { display: none; } /* Better performance on mobile scroll */
+            .lb-btn { width: 44px; height: 44px; background: rgba(0,0,0,0.5); }
         }
     </style>
 </head>
 
 <body>
-    <div class="glow glow-1"></div>
-    <div class="glow glow-2"></div>
     <div id="global-header"></div>
 
-    <div class="site-wrapper">
-        <main class="container-wide main-content fade-in">
-            <h2 class="page-title reveal"><i class="fa-solid fa-images"></i> Photo Gallery</h2>
-            <div class="reveal">
-                <div class="gallery-grid" id="gallery-grid">
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (0).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (1).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (2).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/Banas-Medical-College-Palanpur.webp"
-                            alt="Campus"></div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (3).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (4).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (5).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (6).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (7).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (8).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (9).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (10).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (11).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (12).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (13).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (14).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/Civilhosptial.webp"
-                            alt="Banas General Hospital"></div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/Gnw_2dJWsAA5qIF.jpg"
-                            alt="Banas General Hospital"></div>
-                </div>
+    <main class="container-wide main-content fade-in">
+        <h2 class="page-title reveal"><i class="fa-solid fa-images"></i> Photo Gallery</h2>
+        
+        <div class="gallery-grid" id="gallery-grid">
+            <div class="gallery-item">
+                <img src="../uploads/photo-gallery/unnamed (0).jpg" alt="Gallery Photo" loading="lazy">
+                <div class="gallery-overlay"><i class="fa-solid fa-expand"></i></div>
             </div>
-        </main>
-        <div id="global-footer"></div>
-    </div>
+            <div class="gallery-item">
+                <img src="../uploads/photo-gallery/unnamed (1).jpg" alt="Gallery Photo" loading="lazy">
+                <div class="gallery-overlay"><i class="fa-solid fa-expand"></i></div>
+            </div>
+            <div class="gallery-item">
+                <img src="../uploads/photo-gallery/unnamed (2).jpg" alt="Gallery Photo" loading="lazy">
+                <div class="gallery-overlay"><i class="fa-solid fa-expand"></i></div>
+            </div>
+            <div class="gallery-item">
+                <img src="../uploads/photo-gallery/Banas-Medical-College-Palanpur.webp" alt="Campus" loading="lazy">
+                <div class="gallery-overlay"><i class="fa-solid fa-expand"></i></div>
+            </div>
+            </div>
+    </main>
+
+    <div id="global-footer"></div>
 
     <div id="lightbox" class="lightbox">
-        <span class="lightbox-close" onclick="closeLightbox()">&times;</span>
-        <div id="lightbox-loader" class="lightbox-loader"></div>
-        <button class="lightbox-nav lightbox-prev" onclick="changeSlide(-1)"><i
-                class="fa-solid fa-chevron-left"></i></button>
-        <button class="lightbox-nav lightbox-next" onclick="changeSlide(1)"><i
-                class="fa-solid fa-chevron-right"></i></button>
-        <div id="lightbox-loader" class="loader hidden"></div>
+        <div class="loader hidden"></div>
+        
         <img id="lightbox-img" class="lightbox-content" src="" alt="Full Screen View">
+        
+        <button class="lb-btn lb-close" onclick="closeLightbox()" aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <button class="lb-btn lb-prev" onclick="changeSlide(-1)" aria-label="Previous">
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <button class="lb-btn lb-next" onclick="changeSlide(1)" aria-label="Next">
+            <i class="fa-solid fa-chevron-right"></i>
+        </button>
     </div>
 
     <script>window.SITE_BASE = '../';</script>
     <script src="../assets/js/script.js" defer></script>
     <script>
-document.addEventListener("DOMContentLoaded", () => {
-    // --- CONFIGURATION ---
-    // Select the container, not individual images
-    const gridContainer = document.getElementById('gallery-grid');
+        document.addEventListener("DOMContentLoaded", () => {
+    // --- CACHE DOM ELEMENTS ---
+    const grid = document.getElementById('gallery-grid');
     const lightbox = document.getElementById('lightbox');
-    const lightboxImg = document.getElementById('lightbox-img');
-    
-    // Select the specific loader that has the class 'loader'
-    const loader = document.querySelector('.loader'); 
+    const imgDisplay = document.getElementById('lightbox-img');
+    const loader = document.querySelector('.loader');
 
-    // Internal state
-    let galleryImages = [];
-    let currentIndex = 0;
+    // --- STATE ---
+    let images = [];
+    let idx = 0;
 
-    // --- 1. SETUP: Gather Images & Delegated Click ---
-    function initGallery() {
-        if (!gridContainer) {
-            console.error("Gallery Grid not found!");
-            return;
-        }
+    // --- INIT ---
+    if (!grid) return;
 
-        // 1. Create the list of image sources based on DOM order
-        // We select only the images inside .gallery-item to avoid selecting other icons
-        const images = gridContainer.querySelectorAll('.gallery-item img');
-        galleryImages = Array.from(images).map(img => img.src);
+    // 1. Harvest Images & Add Listener
+    images = Array.from(grid.querySelectorAll('.gallery-item img')).map(img => img.src);
 
-        // 2. EVENT DELEGATION (The Fix for "Not Opening")
-        // Instead of adding 20 listeners, we add 1 to the parent.
-        gridContainer.addEventListener('click', (e) => {
-            // Did the user click inside a gallery item?
-            const item = e.target.closest('.gallery-item');
-            
-            if (item) {
-                // Prevent default link behavior if any
-                e.preventDefault();
-
-                // Find the image inside this specific item
-                const img = item.querySelector('img');
-                if (img) {
-                    // Find the index of this image source in our array
-                    // We compare src strings to find the correct index
-                    const clickedIndex = galleryImages.indexOf(img.src);
-                    
-                    if (clickedIndex !== -1) {
-                        openLightbox(clickedIndex);
-                    }
-                }
-            }
-        });
+    grid.addEventListener('click', (e) => {
+        const item = e.target.closest('.gallery-item');
+        if (!item) return;
         
-        console.log(`Gallery initialized with ${galleryImages.length} images.`);
-    }
+        e.preventDefault();
+        const clickedSrc = item.querySelector('img')?.src;
+        const foundIdx = images.indexOf(clickedSrc);
+        
+        if (foundIdx !== -1) openLightbox(foundIdx);
+    });
 
-    // --- 2. OPEN LIGHTBOX ---
+    // --- CORE FUNCTIONS ---
     function openLightbox(index) {
-        currentIndex = index;
-        
-        // Force display flex/block via class
+        idx = index;
         lightbox.classList.add('active');
         document.body.style.overflow = 'hidden';
-        
-        // Start loading the image
-        loadImageSmoothly();
+        loadImage();
     }
 
-    // --- 3. CLOSE LIGHTBOX ---
-    window.closeLightbox = function() {
-        lightbox.classList.remove('active');
-        lightboxImg.classList.remove('visible');
-        document.body.style.overflow = '';
-        
-        // Reset src to clear memory and prevent flash
-        setTimeout(() => {
-            lightboxImg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
-        }, 300);
-    };
-
-    // --- 4. NEXT / PREV ---
-    window.changeSlide = function(direction) {
-        currentIndex += direction;
-        
-        // Infinite loop logic
-        if (currentIndex >= galleryImages.length) currentIndex = 0;
-        else if (currentIndex < 0) currentIndex = galleryImages.length - 1;
-        
-        loadImageSmoothly();
-    };
-
-    // --- 5. SMOOTH LOADER (Prevents Flicker) ---
-    function loadImageSmoothly() {
-        // Hide existing image
-        lightboxImg.classList.remove('visible');
-        
-        // Show loader
+    function loadImage() {
+        imgDisplay.classList.remove('visible');
         if (loader) loader.classList.remove('hidden');
 
-        const targetSrc = galleryImages[currentIndex];
-        
-        // Preload Image
-        const tempImage = new Image();
-        
-        tempImage.onload = () => {
-            lightboxImg.src = targetSrc;
+        const tmp = new Image();
+        const targetSrc = images[idx];
+
+        tmp.onload = () => {
+            imgDisplay.src = targetSrc;
+            if (loader) loader.classList.add('hidden');
             
-            if (loader) loader.classList.add('hidden');
-
-            // Double RequestAnimationFrame for Mobile Sync
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    lightboxImg.classList.add('visible');
-                });
-            });
+            // Double RAF for smooth mobile paint
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                imgDisplay.classList.add('visible');
+            }));
         };
-
-        tempImage.onerror = () => {
-            console.error("Failed to load:", targetSrc);
-            if (loader) loader.classList.add('hidden');
-        };
-
-        tempImage.src = targetSrc;
+        
+        tmp.src = targetSrc;
     }
 
-    // --- 6. KEYBOARD & BACKGROUND CLICK ---
+    // --- GLOBAL CONTROLS (Accessible by HTML onclick) ---
+    window.closeLightbox = () => {
+        lightbox.classList.remove('active');
+        imgDisplay.classList.remove('visible');
+        document.body.style.overflow = '';
+        // Clear src to prevent flash on next open
+        setTimeout(() => imgDisplay.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", 300);
+    };
+
+    window.changeSlide = (dir) => {
+        // Optimized Cyclic Math: Handles both negative and positive wrapping
+        idx = (idx + dir + images.length) % images.length;
+        loadImage();
+    };
+
+    // --- INPUT LISTENERS ---
     document.addEventListener('keydown', (e) => {
         if (!lightbox.classList.contains('active')) return;
         if (e.key === 'Escape') window.closeLightbox();
@@ -491,11 +309,7 @@ document.addEventListener("DOMContentLoaded", () => {
     lightbox.addEventListener('click', (e) => {
         if (e.target === lightbox) window.closeLightbox();
     });
-
-    // Run
-    initGallery();
 });
     </script>
 </body>
-
 </html>
