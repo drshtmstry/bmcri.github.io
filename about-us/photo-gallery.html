@@ -6,13 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Photo Gallery - BMCRI</title>
 
-    <link rel="icon" href="../assets/favicon.ico" sizes="32x32">
+    <link rel="icon" href="../assets/favicon.ico" sizes="32x32" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
     <link rel="preload" href="../assets/css/style.css" as="style">
     <link rel="preload" href="../assets/css/mobile.css" as="style">
     <link rel="preload" href="../assets/js/script.js" as="script">
+
+    <link rel="preload" href="../header.html" as="fetch" crossorigin>
+    <link rel="preload" href="../footer.html" as="fetch" crossorigin>
+
     <link
         href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@500;700&family=Montserrat:wght@300;400;500;600&display=swap"
         rel="stylesheet">
@@ -22,40 +26,59 @@
     <link rel="stylesheet" href="../assets/css/mobile.css">
 
     <script src="../assets/js/theme.js"></script>
+
     <style>
         /* --- GRID & CARDS --- */
         .gallery-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 25px;
+            gap: 20px;
             padding: 10px;
+            will-change: transform;
         }
 
         .gallery-item {
             position: relative;
-            border-radius: var(--radius);
+            border-radius: 12px;
             overflow: hidden;
             aspect-ratio: 4/3;
-            border: 1px solid var(--border-color);
-            background: var(--bg-card);
-            backdrop-filter: blur(var(--card-blur));
+            
+            /* RESTORED THEME VARIABLES */
+            background: var(--bg-card, #fff); 
+            border: 1px solid var(--border-color, rgba(0,0,0,0.1));
+            
             cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-            box-shadow: var(--shadow-card);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .gallery-item img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.6s ease;
             display: block;
-            image-rendering: auto;
-            transform: translateZ(0);
+            transition: transform 0.5s ease;
             backface-visibility: hidden;
         }
 
-        /* --- OVERLAY & ICONS --- */
+        /* Hover Effects (Desktop Only) */
+        @media (hover: hover) {
+            .gallery-item:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+                border-color: var(--primary, #007bff);
+                z-index: 2;
+            }
+            .gallery-item:hover img {
+                transform: scale(1.08);
+            }
+            .gallery-item:hover .gallery-overlay {
+                opacity: 1;
+            }
+        }
+
+        /* --- OVERLAY --- */
         .gallery-overlay {
             position: absolute;
             inset: 0;
@@ -72,193 +95,112 @@
             color: white;
             font-size: 2rem;
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
-            transform: scale(0.8);
-            transition: transform 0.3s ease;
         }
 
-        /* --- LIGHTBOX --- */
+        /* --- LIGHTBOX (Always Dark Background) --- */
         .lightbox {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            inset: 0;
             background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(8px);
             z-index: 10000;
             display: flex;
             align-items: center;
             justify-content: center;
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s;
-            touch-action: none;
-            overscroll-behavior: contain;
+            pointer-events: none;
+            transition: opacity 0.3s ease, visibility 0.3s;
+            /* PREVENTS SCROLLING BEHIND LIGHTBOX ON MOBILE */
+            touch-action: none; 
         }
 
         .lightbox.active {
             opacity: 1;
             visibility: visible;
+            pointer-events: auto;
         }
 
         .lightbox-content {
-            max-width: 90%;
+            max-width: 95%;
             max-height: 85vh;
-            /* No border or shadow here - prevents empty box flicker */
+            object-fit: contain;
+            border-radius: 4px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
             opacity: 0;
-            transform: scale(0.95);
-            transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-            user-select: none;
+            transform: scale(0.98);
             visibility: hidden;
+            transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            will-change: opacity, transform;
+            backface-visibility: hidden;
+            /* Allow selection/touch on the image itself if needed */
+            user-select: none;
         }
 
         .lightbox-content.visible {
-            visibility: visible;
             opacity: 1;
             transform: scale(1);
-            /* Only show border/shadow when image is actually there */
-            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        /* Add this to your style block */
-        .notransition {
-            transition: none !important;
+            visibility: visible;
         }
 
         /* --- CONTROLS --- */
-        .lightbox-nav {
+        .lb-btn {
             position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.15);
             color: white;
             border: none;
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            font-size: 1.5rem;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            z-index: 10005;
-            backdrop-filter: blur(5px);
+            font-size: 1.2rem;
+            transition: background 0.2s, transform 0.2s;
+            z-index: 10001;
+            backdrop-filter: blur(4px);
+            padding: 0;
+            margin: 0;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .lightbox-nav:hover {
-            background: var(--primary);
-            transform: translateY(-50%) scale(1.1);
+        .lb-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
         }
 
-        .lightbox-prev {
-            left: 20px;
-        }
-
-        .lightbox-next {
-            right: 20px;
-        }
-
-        .lightbox-close {
-            position: absolute;
+        .lb-prev { left: 20px; }
+        .lb-next { right: 20px; }
+        .lb-close {
             top: 20px;
-            right: 30px;
-            color: white;
-            font-size: 3rem;
-            cursor: pointer;
-            opacity: 0.7;
-            transition: 0.2s;
-            z-index: 10005;
-        }
-
-        .lightbox-close:hover {
-            opacity: 1;
-            color: var(--primary);
+            right: 20px;
+            background: transparent;
+            font-size: 2rem;
         }
 
         /* --- LOADER --- */
-        .lightbox-loader {
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            border-top: 4px solid var(--primary);
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 5px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #fff;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
             animation: spin 1s linear infinite;
             position: absolute;
-            display: none;
-            z-index: 10002;
+            z-index: 9999;
         }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* --- DESKTOP HOVER LOGIC --- */
-        @media (hover: hover) {
-
-            .gallery-item:hover,
-            .gallery-item.locked-hover {
-                transform: translateY(-6px);
-                border-color: var(--primary);
-                box-shadow: 0 12px 30px rgba(59, 130, 246, 0.25);
-                z-index: 10;
-            }
-
-            .gallery-item:hover img,
-            .gallery-item.locked-hover img {
-                transform: scale(1.1);
-            }
-
-            .gallery-item:hover .gallery-overlay,
-            .gallery-item.locked-hover .gallery-overlay {
-                opacity: 1;
-            }
-
-            .gallery-item:hover .gallery-overlay i,
-            .gallery-item.locked-hover .gallery-overlay i {
-                transform: scale(1);
-            }
-        }
+        .loader.hidden { display: none; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         /* --- MOBILE OPTIMIZATION --- */
         @media (max-width: 768px) {
-            .gallery-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .gallery-overlay {
-                display: none;
-            }
-
-            .lightbox-content {
-                max-width: 95%;
-            }
-
-            /* Force Buttons Visible & Touch Friendly */
-            .lightbox-nav {
-                display: flex !important;
-                width: 40px;
-                height: 40px;
-                background: rgba(0, 0, 0, 0.3) !important;
-                border: 1px solid rgba(255, 255, 255, 0.2);
-            }
-
-            .lightbox-nav:hover {
-                background: rgba(0, 0, 0, 0.3) !important;
-                transform: translateY(-50%) !important;
-            }
-
-            .lightbox-nav:active {
-                background: var(--primary) !important;
-                transform: translateY(-50%) scale(0.9) !important;
-            }
+            .gallery-grid { grid-template-columns: 1fr; gap: 15px; }
+            .gallery-overlay { display: none; }
+            .lb-btn { width: 44px; height: 44px; background: rgba(0, 0, 0, 0.5); }
+            .lb-prev { left: 10px; }
+            .lb-next { right: 10px; }
+            .lb-close { top: 10px; right: 10px; }
         }
     </style>
 </head>
@@ -266,6 +208,7 @@
 <body>
     <div class="glow glow-1"></div>
     <div class="glow glow-2"></div>
+    
     <div id="global-header"></div>
 
     <div class="site-wrapper">
@@ -273,42 +216,24 @@
             <h2 class="page-title reveal"><i class="fa-solid fa-images"></i> Photo Gallery</h2>
             <div class="reveal">
                 <div class="gallery-grid" id="gallery-grid">
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (0).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (1).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (2).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/Banas-Medical-College-Palanpur.webp"
-                            alt="Campus"></div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (3).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (4).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (5).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (6).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (7).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (8).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (9).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (10).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (11).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (12).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (13).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (14).jpg" alt="Gallery Photo">
-                    </div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/Civilhosptial.webp"
-                            alt="Banas General Hospital"></div>
-                    <div class="gallery-item"><img src="../uploads/photo-gallery/Gnw_2dJWsAA5qIF.jpg"
-                            alt="Banas General Hospital"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (0).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (1).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (2).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/Banas-Medical-College-Palanpur.webp" alt="Campus" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (3).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (4).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (5).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (6).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (7).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (8).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (9).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (10).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (11).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (12).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (13).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (14).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/Civilhosptial.webp" alt="Banas General Hospital" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/Gnw_2dJWsAA5qIF.jpg" alt="Banas General Hospital" loading="lazy"></div>
                 </div>
             </div>
         </main>
@@ -316,141 +241,135 @@
     </div>
 
     <div id="lightbox" class="lightbox">
-        <span class="lightbox-close" onclick="closeLightbox()">&times;</span>
-        <div id="lightbox-loader" class="lightbox-loader"></div>
-        <button class="lightbox-nav lightbox-prev" onclick="changeSlide(-1)"><i
-                class="fa-solid fa-chevron-left"></i></button>
-        <button class="lightbox-nav lightbox-next" onclick="changeSlide(1)"><i
-                class="fa-solid fa-chevron-right"></i></button>
+        <div class="loader hidden"></div>
         <img id="lightbox-img" class="lightbox-content" src="" alt="Full Screen View">
+        
+        <button class="lb-btn lb-close" onclick="closeLightbox()"><i class="fa-solid fa-xmark"></i></button>
+        <button class="lb-btn lb-prev" onclick="changeSlide(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+        <button class="lb-btn lb-next" onclick="changeSlide(1)"><i class="fa-solid fa-chevron-right"></i></button>
     </div>
 
     <script>window.SITE_BASE = '../';</script>
     <script src="../assets/js/script.js" defer></script>
+    
     <script>
-        const lightbox = document.getElementById('lightbox'),
-            lightboxImg = document.getElementById('lightbox-img'),
-            lightboxLoader = document.getElementById('lightbox-loader');
-        let galleryImages = [], currentIndex = 0, currentActiveCard = null;
+    document.addEventListener("DOMContentLoaded", () => {
+        const grid = document.getElementById('gallery-grid');
+        const lightbox = document.getElementById('lightbox');
+        const imgDisplay = document.getElementById('lightbox-img');
+        const loader = document.querySelector('.loader');
 
-        document.addEventListener("DOMContentLoaded", () => {
-            const items = document.querySelectorAll('.gallery-item');
-            items.forEach((item, index) => {
-                const overlay = document.createElement('div');
-                overlay.className = 'gallery-overlay';
-                overlay.innerHTML = '<i class="fa-solid fa-magnifying-glass-plus"></i>';
-                item.appendChild(overlay);
-                galleryImages.push(item.querySelector('img').src);
-                item.onclick = () => openLightbox(index, item);
-            });
+        let images = [];
+        let idx = 0;
+
+        if (!grid) return;
+
+        images = Array.from(grid.querySelectorAll('.gallery-item img')).map(img => img.src);
+
+        grid.addEventListener('click', (e) => {
+            const item = e.target.closest('.gallery-item');
+            if (!item) return;
+            e.preventDefault();
+            const clickedSrc = item.querySelector('img')?.src;
+            const foundIdx = images.indexOf(clickedSrc);
+            if (foundIdx !== -1) openLightbox(foundIdx);
         });
 
-        function openLightbox(index, element) {
-            currentIndex = index;
-
-            // 1. Lock Hover
-            if (currentActiveCard) currentActiveCard.classList.remove('locked-hover');
-            if (element) { element.classList.add('locked-hover'); currentActiveCard = element; }
-
-            // 2. KILL THE OLD IMAGE (The Fix)
-            // 'display: none' is the only way to stop a CSS transition instantly.
-            lightboxImg.style.display = 'none';
-            lightboxImg.src = "";
-            lightboxImg.classList.remove('visible');
-
-            // 3. Show Lightbox Container
+        function openLightbox(index) {
+            idx = index;
             lightbox.classList.add('active');
-            document.documentElement.style.overflow = 'hidden';
+            // Prevent background scrolling on all devices
             document.body.style.overflow = 'hidden';
-
-            // 4. Start Loading New Image
-            // We don't need delays anymore because display:none is instant.
-            loadImage(galleryImages[currentIndex]);
+            document.documentElement.style.overflow = 'hidden';
+            loadImage();
         }
 
-        function loadImage(src) {
-            // Show Loader
-            lightboxLoader.classList.remove('hidden');
+        function loadImage() {
+            imgDisplay.classList.remove('visible');
+            if (loader) loader.classList.remove('hidden');
 
-            // DO NOT hide the image here.
-            // Leaving it visible ensures Next/Prev buttons swap images instantly without a black flash.
+            const tmp = new Image();
+            const targetSrc = images[idx];
 
-            const pre = new Image();
-            pre.src = src;
-
-            const showImage = () => {
-                lightboxImg.src = src;
-
-                requestAnimationFrame(() => {
-                    lightboxLoader.classList.add('hidden');
-
-                    // 1. RESTORE LAYOUT (Undo the display:none from opening)
-                    lightboxImg.style.display = 'block';
-
-                    // 2. TRIGGER FADE IN
-                    // We use a slight delay to ensure the browser sees "display: block" first
-                    requestAnimationFrame(() => {
-                        lightboxImg.style.visibility = 'visible';
-                        lightboxImg.classList.add('visible');
-                    });
-                });
+            tmp.onload = () => {
+                imgDisplay.src = targetSrc;
+                if (loader) loader.classList.add('hidden');
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    imgDisplay.classList.add('visible');
+                }));
             };
-
-            if (pre.decode) {
-                pre.decode().then(showImage).catch(showImage);
-            } else {
-                pre.onload = showImage;
-            }
+            tmp.src = targetSrc;
         }
 
-        function closeLightbox(e) {
-            // Check if the click was on the background or the close button
-            if (!e || e.target === lightbox || e.target.classList.contains('lightbox-close')) {
+        window.closeLightbox = () => {
+            lightbox.classList.remove('active');
+            imgDisplay.classList.remove('visible');
+            // Re-enable scrolling
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+            setTimeout(() => imgDisplay.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", 300);
+        };
 
-                lightbox.classList.remove('active');
-                document.documentElement.style.overflow = '';
-                document.body.style.overflow = '';
+        window.changeSlide = (dir) => {
+            idx = (idx + dir + images.length) % images.length;
+            loadImage();
+        };
 
-                // Hide the image immediately so it fades out with the container
-                lightboxImg.classList.remove('visible');
-
-                if (currentActiveCard) {
-                    setTimeout(() => {
-                        currentActiveCard.classList.remove('locked-hover');
-                        currentActiveCard = null;
-                    }, 300);
-                }
-
-                // Reset everything after the fade-out animation is done
-                setTimeout(() => {
-                    lightboxImg.src = '';
-                    lightboxImg.style.visibility = 'hidden';
-                    lightboxLoader.classList.add('hidden'); // Ensure loader is hidden
-                }, 300);
-            }
-        }
-
-        function changeSlide(dir) {
-            currentIndex = (currentIndex + dir + galleryImages.length) % galleryImages.length;
-            loadImage(galleryImages[currentIndex]);
-        }
-
+        /* --- KEYBOARD SUPPORT --- */
         document.addEventListener('keydown', (e) => {
             if (!lightbox.classList.contains('active')) return;
-            if (e.key === "Escape") closeLightbox();
-            if (e.key === "ArrowLeft") changeSlide(-1);
-            if (e.key === "ArrowRight") changeSlide(1);
+            if (e.key === 'Escape') window.closeLightbox();
+            if (e.key === 'ArrowLeft') window.changeSlide(-1);
+            if (e.key === 'ArrowRight') window.changeSlide(1);
         });
 
-        let tSX = 0, tSY = 0, tEX = 0, tEY = 0;
-        lightbox.addEventListener('touchstart', (e) => { tSX = e.changedTouches[0].screenX; tSY = e.changedTouches[0].screenY; }, { passive: true });
-        lightbox.addEventListener('touchend', (e) => {
-            tEX = e.changedTouches[0].screenX; tEY = e.changedTouches[0].screenY;
-            if (Math.abs(tEX - tSX) > 50 && Math.abs(tEX - tSX) > Math.abs(tEY - tSY)) changeSlide(tEX > tSX ? -1 : 1);
-            else if (tEY - tSY > 100) closeLightbox();
-        }, { passive: true });
-        lightbox.onclick = closeLightbox;
+        /* --- CLICK TO CLOSE --- */
+        lightbox.addEventListener('click', (e) => {
+            if (e.target === lightbox) window.closeLightbox();
+        });
+
+        /* --- SWIPE GESTURES --- */
+        let touchStartX = 0;
+        let touchEndX = 0;
+        let touchStartY = 0;
+        let touchEndY = 0;
+
+        lightbox.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, {passive: true});
+
+        lightbox.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            touchEndY = e.changedTouches[0].screenY;
+            handleGesture();
+        }, {passive: true});
+
+        function handleGesture() {
+            const xDiff = touchStartX - touchEndX;
+            const yDiff = touchStartY - touchEndY;
+            const threshold = 50; // Minimum distance to trigger swipe
+
+            if (Math.abs(xDiff) > Math.abs(yDiff)) {
+                // Horizontal Swipe (Left/Right)
+                if (Math.abs(xDiff) > threshold) {
+                    if (xDiff > 0) {
+                        // Swiped Left -> Next Image
+                        window.changeSlide(1); 
+                    } else {
+                        // Swiped Right -> Prev Image
+                        window.changeSlide(-1);
+                    }
+                }
+            } else {
+                // Vertical Swipe (Up/Down)
+                if (Math.abs(yDiff) > threshold) {
+                    // Swiped Up or Down -> Close
+                    window.closeLightbox();
+                }
+            }
+        }
+    });
     </script>
 </body>
-
 </html>
