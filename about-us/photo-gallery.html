@@ -187,6 +187,16 @@
             font-size: 2rem;
         }
 
+        /* Increase touch target size without changing icon size */
+        .lb-btn::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            bottom: -10px;
+            left: -10px;
+        }
+
         /* --- LOADER --- */
         .loader {
             width: 48px;
@@ -209,6 +219,27 @@
             }
         }
 
+        /* Reset the button appearance when it is focused (after click) */
+        .lb-btn:focus {
+            background: rgba(255, 255, 255, 0.15);
+            transform: none;
+            outline: none;
+        }
+
+        /* Only apply hover effects on devices that support it (Desktop) */
+        @media (hover: hover) {
+            .lb-btn:hover {
+                background: rgba(255, 255, 255, 0.3);
+                transform: scale(1.1);
+            }
+        }
+
+        /* Optional: Add an 'active' state for touch feedback on mobile */
+        .lb-btn:active {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(0.95);
+        }
+
         /* --- MOBILE OPTIMIZATION --- */
         @media (max-width: 768px) {
             .gallery-grid {
@@ -220,24 +251,31 @@
                 display: none;
             }
 
-            .lb-btn {
-                width: 35px;
-                height: 35px;
-                background: rgba(0, 0, 0, 0.5);
-                font-size: 0.8rem;
+            /* Move Nav Buttons to Bottom */
+            .lb-prev,
+            .lb-next {
+                top: auto;
+                /* Unset top positioning */
+                bottom: 30px;
+                /* Position from bottom */
+                width: 45px;
+                /* Slightly larger touch target */
+                height: 45px;
             }
 
+            /* Adjust Horizontal Spacing */
             .lb-prev {
-                left: 10px;
+                left: 20px;
             }
 
             .lb-next {
-                right: 10px;
+                right: 20px;
             }
 
+            /* Keep Close button at top, but ensure it doesn't overlap status bars */
             .lb-close {
-                top: 10px;
-                right: 10px;
+                top: 20px;
+                right: 20px;
             }
         }
     </style>
@@ -379,11 +417,6 @@
                 if (e.key === 'ArrowRight') window.changeSlide(1);
             });
 
-            /* --- CLICK TO CLOSE --- */
-            lightbox.addEventListener('click', (e) => {
-                if (e.target === lightbox) window.closeLightbox();
-            });
-
             /* --- SWIPE GESTURES --- */
             let touchStartX = 0;
             let touchEndX = 0;
@@ -416,12 +449,6 @@
                             // Swiped Right -> Prev Image
                             window.changeSlide(-1);
                         }
-                    }
-                } else {
-                    // Vertical Swipe (Up/Down)
-                    if (Math.abs(yDiff) > threshold) {
-                        // Swiped Up or Down -> Close
-                        window.closeLightbox();
                     }
                 }
             }
