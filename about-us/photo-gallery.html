@@ -358,84 +358,113 @@
     <script>window.SITE_BASE = '../';</script>
     <script src="../assets/js/script.js" defer></script>
     <script>
-    document.addEventListener("DOMContentLoaded", () => {
-    document.addEventListener("DOMContentLoaded", () => {
-    // --- VARIABLES ---
+document.addEventListener("DOMContentLoaded", () => {
+    // --- CONFIGURATION ---
+    // Select the container, not individual images
+    const gridContainer = document.getElementById('gallery-grid');
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    
+    // Select the specific loader that has the class 'loader'
+    const loader = document.querySelector('.loader'); 
+
+    // Internal state
     let galleryImages = [];
     let currentIndex = 0;
 
-    // --- ELEMENTS ---
-    const lightbox = document.getElementById('lightbox');
-    const lightboxImg = document.getElementById('lightbox-img');
-    const loader = document.querySelector('.loader') || document.getElementById('lightbox-loader');
-
-    // --- 1. INITIALIZATION ---
+    // --- 1. SETUP: Gather Images & Delegated Click ---
     function initGallery() {
-        // Collect all images
-        const items = document.querySelectorAll('.gallery-item img');
-        if (items.length === 0) return;
+        if (!gridContainer) {
+            console.error("Gallery Grid not found!");
+            return;
+        }
 
-        items.forEach((img, index) => {
-            galleryImages.push(img.src); // Store source
-            img.closest('.gallery-item').addEventListener('click', (e) => {
+        // 1. Create the list of image sources based on DOM order
+        // We select only the images inside .gallery-item to avoid selecting other icons
+        const images = gridContainer.querySelectorAll('.gallery-item img');
+        galleryImages = Array.from(images).map(img => img.src);
+
+        // 2. EVENT DELEGATION (The Fix for "Not Opening")
+        // Instead of adding 20 listeners, we add 1 to the parent.
+        gridContainer.addEventListener('click', (e) => {
+            // Did the user click inside a gallery item?
+            const item = e.target.closest('.gallery-item');
+            
+            if (item) {
+                // Prevent default link behavior if any
                 e.preventDefault();
-                openLightbox(index);
-            });
+
+                // Find the image inside this specific item
+                const img = item.querySelector('img');
+                if (img) {
+                    // Find the index of this image source in our array
+                    // We compare src strings to find the correct index
+                    const clickedIndex = galleryImages.indexOf(img.src);
+                    
+                    if (clickedIndex !== -1) {
+                        openLightbox(clickedIndex);
+                    }
+                }
+            }
         });
+        
+        console.log(`Gallery initialized with ${galleryImages.length} images.`);
     }
 
-    // --- 2. OPEN LOGIC (Fixed for Flicker) ---
+    // --- 2. OPEN LIGHTBOX ---
     function openLightbox(index) {
         currentIndex = index;
         
-        // 1. Show the dark overlay FIRST (keep image hidden)
+        // Force display flex/block via class
         lightbox.classList.add('active');
         document.body.style.overflow = 'hidden';
         
-        // 2. Load the image logic
+        // Start loading the image
         loadImageSmoothly();
     }
 
-    // --- 3. CLOSE LOGIC ---
+    // --- 3. CLOSE LIGHTBOX ---
     window.closeLightbox = function() {
         lightbox.classList.remove('active');
-        lightboxImg.classList.remove('visible'); // Hide image immediately
-        document.body.style.overflow = ''; 
-
-        // Clear src after a delay to prevent "flash" of old image next time
+        lightboxImg.classList.remove('visible');
+        document.body.style.overflow = '';
+        
+        // Reset src to clear memory and prevent flash
         setTimeout(() => {
-            lightboxImg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"; // Transparent placeholder
+            lightboxImg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
         }, 300);
     };
 
-    // --- 4. NAVIGATION ---
+    // --- 4. NEXT / PREV ---
     window.changeSlide = function(direction) {
         currentIndex += direction;
+        
+        // Infinite loop logic
         if (currentIndex >= galleryImages.length) currentIndex = 0;
         else if (currentIndex < 0) currentIndex = galleryImages.length - 1;
+        
         loadImageSmoothly();
     };
 
-    // --- 5. SMOOTH LOADER (The Flicker Fix) ---
+    // --- 5. SMOOTH LOADER (Prevents Flicker) ---
     function loadImageSmoothly() {
-        // A. Hide current image & show loader
+        // Hide existing image
         lightboxImg.classList.remove('visible');
+        
+        // Show loader
         if (loader) loader.classList.remove('hidden');
 
         const targetSrc = galleryImages[currentIndex];
-
-        // B. Preload in memory
+        
+        // Preload Image
         const tempImage = new Image();
         
         tempImage.onload = () => {
-            // C. Set src ONLY when fully loaded
             lightboxImg.src = targetSrc;
             
-            // D. Hide loader
             if (loader) loader.classList.add('hidden');
 
-            // E. THE MOBILE FIX: Double RequestAnimationFrame
-            // This forces the browser to paint the new src BEFORE starting the opacity transition
+            // Double RequestAnimationFrame for Mobile Sync
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     lightboxImg.classList.add('visible');
@@ -444,13 +473,14 @@
         };
 
         tempImage.onerror = () => {
+            console.error("Failed to load:", targetSrc);
             if (loader) loader.classList.add('hidden');
         };
 
         tempImage.src = targetSrc;
     }
 
-    // --- 6. EVENT LISTENERS ---
+    // --- 6. KEYBOARD & BACKGROUND CLICK ---
     document.addEventListener('keydown', (e) => {
         if (!lightbox.classList.contains('active')) return;
         if (e.key === 'Escape') window.closeLightbox();
@@ -459,13 +489,11 @@
     });
 
     lightbox.addEventListener('click', (e) => {
-        if (e.target === lightbox || e.target.classList.contains('lightbox-close')) {
-            window.closeLightbox();
-        }
+        if (e.target === lightbox) window.closeLightbox();
     });
 
+    // Run
     initGallery();
-});
 });
     </script>
 </body>
