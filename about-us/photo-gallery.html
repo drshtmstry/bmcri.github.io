@@ -101,24 +101,31 @@
             visibility: visible;
         }
 
-        .lightbox-content {
-            max-width: 90%;
-            max-height: 85vh;
-            border-radius: 4px;
-            opacity: 0;
-            transform: scale(0.95);
-            transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-            user-select: none;
-            visibility: hidden;
-        }
+/* Update this specific section in your CSS */
+.lightbox-content {
+    max-width: 90%;
+    max-height: 85vh;
+    border-radius: 4px;
+    
+    /* Start completely hidden */
+    opacity: 0;
+    transform: scale(0.96); /* Reduced scale movement */
+    visibility: hidden; 
+    
+    /* Smooth transition */
+    transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    
+    /* Fix for mobile flickering */
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    will-change: opacity, transform;
+}
 
-        .lightbox-content.visible {
-            visibility: visible;
-            opacity: 1;
-            transform: scale(1);
-            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
+.lightbox-content.visible {
+    visibility: visible;
+    opacity: 1;
+    transform: scale(1);
+}
 
         /* Add this to your style block */
         .notransition {
@@ -351,7 +358,8 @@
     <script>window.SITE_BASE = '../';</script>
     <script src="../assets/js/script.js" defer></script>
     <script>
-document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", () => {
     // --- VARIABLES ---
     let galleryImages = [];
     let currentIndex = 0;
@@ -359,110 +367,103 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- ELEMENTS ---
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightbox-img');
-    // Note: Selecting by class because your HTML had duplicate IDs for the loader
-    const loader = document.querySelector('.loader'); 
+    const loader = document.querySelector('.loader') || document.getElementById('lightbox-loader');
 
     // --- 1. INITIALIZATION ---
     function initGallery() {
+        // Collect all images
         const items = document.querySelectorAll('.gallery-item img');
-        
         if (items.length === 0) return;
 
         items.forEach((img, index) => {
-            // Store high-res source (currently using same src, but extensible)
-            galleryImages.push(img.src);
-            
-            // Add click listener to the parent card
-            img.closest('.gallery-item').addEventListener('click', () => {
+            galleryImages.push(img.src); // Store source
+            img.closest('.gallery-item').addEventListener('click', (e) => {
+                e.preventDefault();
                 openLightbox(index);
             });
         });
     }
 
-    // --- 2. OPEN/CLOSE LOGIC ---
+    // --- 2. OPEN LOGIC (Fixed for Flicker) ---
     function openLightbox(index) {
         currentIndex = index;
+        
+        // 1. Show the dark overlay FIRST (keep image hidden)
         lightbox.classList.add('active');
-        document.body.style.overflow = 'hidden'; // Disable background scroll
+        document.body.style.overflow = 'hidden';
+        
+        // 2. Load the image logic
         loadImageSmoothly();
     }
 
+    // --- 3. CLOSE LOGIC ---
     window.closeLightbox = function() {
         lightbox.classList.remove('active');
-        document.body.style.overflow = ''; // Re-enable background scroll
-        
-        // Reset image state after animation to prevent "flash" on next open
+        lightboxImg.classList.remove('visible'); // Hide image immediately
+        document.body.style.overflow = ''; 
+
+        // Clear src after a delay to prevent "flash" of old image next time
         setTimeout(() => {
-            lightboxImg.classList.remove('visible');
-            lightboxImg.src = ""; 
+            lightboxImg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"; // Transparent placeholder
         }, 300);
     };
 
-    // --- 3. NAVIGATION ---
+    // --- 4. NAVIGATION ---
     window.changeSlide = function(direction) {
         currentIndex += direction;
-
-        // Wrap around logic (Infinite Loop)
-        if (currentIndex >= galleryImages.length) {
-            currentIndex = 0;
-        } else if (currentIndex < 0) {
-            currentIndex = galleryImages.length - 1;
-        }
-
+        if (currentIndex >= galleryImages.length) currentIndex = 0;
+        else if (currentIndex < 0) currentIndex = galleryImages.length - 1;
         loadImageSmoothly();
     };
 
-    // --- 4. NO-FLICKER IMAGE LOADER ---
+    // --- 5. SMOOTH LOADER (The Flicker Fix) ---
     function loadImageSmoothly() {
-        // A. Immediately hide current image and show loader
+        // A. Hide current image & show loader
         lightboxImg.classList.remove('visible');
-        loader.classList.remove('hidden');
+        if (loader) loader.classList.remove('hidden');
 
         const targetSrc = galleryImages[currentIndex];
 
-        // B. Preload the new image in memory first
+        // B. Preload in memory
         const tempImage = new Image();
         
         tempImage.onload = () => {
-            // C. Once loaded, update the real DOM element
+            // C. Set src ONLY when fully loaded
             lightboxImg.src = targetSrc;
             
             // D. Hide loader
-            loader.classList.add('hidden');
+            if (loader) loader.classList.add('hidden');
 
-            // E. Fade image in (requestAnimationFrame ensures CSS transition catches)
+            // E. THE MOBILE FIX: Double RequestAnimationFrame
+            // This forces the browser to paint the new src BEFORE starting the opacity transition
             requestAnimationFrame(() => {
-                lightboxImg.classList.add('visible');
+                requestAnimationFrame(() => {
+                    lightboxImg.classList.add('visible');
+                });
             });
         };
 
         tempImage.onerror = () => {
-            // Fallback if image fails
-            loader.classList.add('hidden');
-            console.error("Failed to load image:", targetSrc);
+            if (loader) loader.classList.add('hidden');
         };
 
-        // Start loading
         tempImage.src = targetSrc;
     }
 
-    // --- 5. KEYBOARD CONTROLS ---
+    // --- 6. EVENT LISTENERS ---
     document.addEventListener('keydown', (e) => {
         if (!lightbox.classList.contains('active')) return;
-        
         if (e.key === 'Escape') window.closeLightbox();
         if (e.key === 'ArrowLeft') window.changeSlide(-1);
         if (e.key === 'ArrowRight') window.changeSlide(1);
     });
 
-    // --- 6. CLOSE ON OVERLAY CLICK ---
     lightbox.addEventListener('click', (e) => {
-        if (e.target === lightbox) {
+        if (e.target === lightbox || e.target.classList.contains('lightbox-close')) {
             window.closeLightbox();
         }
     });
 
-    // Run Init
     initGallery();
 });
     </script>
