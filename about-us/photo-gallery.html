@@ -1,34 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Photo Gallery - BMCRI</title>
-    
-    <link rel="icon" href="../assets/favicon.ico">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+    <link rel="icon" href="../assets/favicon.ico" sizes="32x32">
+
     <link rel="stylesheet" href="../assets/css/style.css">
-    
+    <link rel="stylesheet" href="../assets/css/mobile.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
     <style>
-        /* --- 1. GRID LAYOUT --- */
+        /* --- GRID & CARDS --- */
         .gallery-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 20px;
-            padding: 20px 0;
-            will-change: transform; /* Hint for browser optimization */
+            padding: 10px;
+            will-change: transform;
         }
 
-        /* --- 2. CARD ITEM --- */
         .gallery-item {
             position: relative;
             border-radius: 12px;
             overflow: hidden;
             aspect-ratio: 4/3;
-            background: #f0f0f0; /* Placeholder color while loading */
+            background: #f0f0f0;
             cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .gallery-item img {
@@ -37,14 +40,14 @@
             object-fit: cover;
             display: block;
             transition: transform 0.5s ease;
-            backface-visibility: hidden; /* Fixes mobile flickering */
+            backface-visibility: hidden; /* Fixes mobile flicker */
         }
 
         /* Hover Effects (Desktop Only) */
         @media (hover: hover) {
             .gallery-item:hover {
                 transform: translateY(-5px);
-                box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+                box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
                 z-index: 2;
             }
             .gallery-item:hover img {
@@ -55,7 +58,7 @@
             }
         }
 
-        /* --- 3. OVERLAY (Icon) --- */
+        /* --- OVERLAY --- */
         .gallery-overlay {
             position: absolute;
             inset: 0;
@@ -65,18 +68,22 @@
             justify-content: center;
             opacity: 0;
             transition: opacity 0.3s ease;
+            pointer-events: none;
         }
-        
+
         .gallery-overlay i {
             color: white;
             font-size: 2rem;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
         }
 
-        /* --- 4. LIGHTBOX (Core Logic) --- */
+        /* --- LIGHTBOX --- */
         .lightbox {
             position: fixed;
-            inset: 0;
+            top: 0; 
+            left: 0;
+            width: 100%; 
+            height: 100%;
             background: rgba(0, 0, 0, 0.95);
             backdrop-filter: blur(8px);
             z-index: 10000;
@@ -97,21 +104,19 @@
             pointer-events: auto;
         }
 
-        /* The Image */
         .lightbox-content {
             max-width: 95%;
             max-height: 85vh;
             object-fit: contain;
             border-radius: 4px;
-            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
             
-            /* Anti-Flicker Animation State */
+            /* Animation State */
             opacity: 0;
             transform: scale(0.98);
             visibility: hidden;
             transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
             
-            /* GPU Acceleration */
             will-change: opacity, transform;
             backface-visibility: hidden;
         }
@@ -122,7 +127,7 @@
             visibility: visible;
         }
 
-        /* --- 5. CONTROLS (Buttons) --- */
+        /* --- CONTROLS --- */
         .lb-btn {
             position: absolute;
             background: rgba(255, 255, 255, 0.15);
@@ -139,6 +144,10 @@
             transition: background 0.2s, transform 0.2s;
             z-index: 10001;
             backdrop-filter: blur(4px);
+            /* Remove default button styles */
+            padding: 0;
+            margin: 0;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .lb-btn:hover {
@@ -155,9 +164,8 @@
             background: transparent;
             font-size: 2rem;
         }
-        .lb-close:hover { background: transparent; color: #ff6b6b; transform: rotate(90deg); }
 
-        /* --- 6. LOADER --- */
+        /* --- LOADER --- */
         .loader {
             width: 48px;
             height: 48px;
@@ -166,150 +174,150 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
             position: absolute;
+            z-index: 9999;
         }
         .loader.hidden { display: none; }
         
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Mobile Tweaks */
+        /* --- MOBILE OPTIMIZATION --- */
         @media (max-width: 768px) {
-            .gallery-grid { grid-template-columns: 1fr; gap: 15px; }
-            .gallery-overlay { display: none; } /* Better performance on mobile scroll */
-            .lb-btn { width: 44px; height: 44px; background: rgba(0,0,0,0.5); }
+            .gallery-grid {
+                grid-template-columns: 1fr; 
+                gap: 15px;
+            }
+            .gallery-overlay { 
+                display: none; 
+            }
+            .lb-btn { 
+                width: 44px; 
+                height: 44px; 
+                background: rgba(0, 0, 0, 0.5); 
+            }
+            .lb-prev { left: 10px; }
+            .lb-next { right: 10px; }
+            .lb-close { top: 10px; right: 10px; }
         }
     </style>
 </head>
 
 <body>
+    <div class="glow glow-1"></div>
+    <div class="glow glow-2"></div>
+    
     <div id="global-header"></div>
 
-    <main class="container-wide main-content fade-in">
-        <h2 class="page-title reveal"><i class="fa-solid fa-images"></i> Photo Gallery</h2>
-        
-        <div class="gallery-grid" id="gallery-grid">
-            <div class="gallery-item">
-                <img src="../uploads/photo-gallery/unnamed (0).jpg" alt="Gallery Photo" loading="lazy">
-                <div class="gallery-overlay"><i class="fa-solid fa-expand"></i></div>
+    <div class="site-wrapper">
+        <main class="container-wide main-content fade-in">
+            <h2 class="page-title reveal"><i class="fa-solid fa-images"></i> Photo Gallery</h2>
+            <div class="reveal">
+                <div class="gallery-grid" id="gallery-grid">
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (0).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (1).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (2).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/Banas-Medical-College-Palanpur.webp" alt="Campus" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (3).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (4).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (5).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (6).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (7).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (8).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (9).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (10).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (11).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (12).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (13).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/unnamed (14).jpg" alt="Gallery Photo" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/Civilhosptial.webp" alt="Banas General Hospital" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../uploads/photo-gallery/Gnw_2dJWsAA5qIF.jpg" alt="Banas General Hospital" loading="lazy"></div>
+                </div>
             </div>
-            <div class="gallery-item">
-                <img src="../uploads/photo-gallery/unnamed (1).jpg" alt="Gallery Photo" loading="lazy">
-                <div class="gallery-overlay"><i class="fa-solid fa-expand"></i></div>
-            </div>
-            <div class="gallery-item">
-                <img src="../uploads/photo-gallery/unnamed (2).jpg" alt="Gallery Photo" loading="lazy">
-                <div class="gallery-overlay"><i class="fa-solid fa-expand"></i></div>
-            </div>
-            <div class="gallery-item">
-                <img src="../uploads/photo-gallery/Banas-Medical-College-Palanpur.webp" alt="Campus" loading="lazy">
-                <div class="gallery-overlay"><i class="fa-solid fa-expand"></i></div>
-            </div>
-            </div>
-    </main>
-
-    <div id="global-footer"></div>
+        </main>
+        <div id="global-footer"></div>
+    </div>
 
     <div id="lightbox" class="lightbox">
         <div class="loader hidden"></div>
-        
         <img id="lightbox-img" class="lightbox-content" src="" alt="Full Screen View">
         
-        <button class="lb-btn lb-close" onclick="closeLightbox()" aria-label="Close">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
-        <button class="lb-btn lb-prev" onclick="changeSlide(-1)" aria-label="Previous">
-            <i class="fa-solid fa-chevron-left"></i>
-        </button>
-        <button class="lb-btn lb-next" onclick="changeSlide(1)" aria-label="Next">
-            <i class="fa-solid fa-chevron-right"></i>
-        </button>
+        <button class="lb-btn lb-close" onclick="closeLightbox()"><i class="fa-solid fa-xmark"></i></button>
+        <button class="lb-btn lb-prev" onclick="changeSlide(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+        <button class="lb-btn lb-next" onclick="changeSlide(1)"><i class="fa-solid fa-chevron-right"></i></button>
     </div>
 
     <script>window.SITE_BASE = '../';</script>
     <script src="../assets/js/script.js" defer></script>
+    
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-    // --- CACHE DOM ELEMENTS ---
-    const grid = document.getElementById('gallery-grid');
-    const lightbox = document.getElementById('lightbox');
-    const imgDisplay = document.getElementById('lightbox-img');
-    const loader = document.querySelector('.loader');
+    document.addEventListener("DOMContentLoaded", () => {
+        const grid = document.getElementById('gallery-grid');
+        const lightbox = document.getElementById('lightbox');
+        const imgDisplay = document.getElementById('lightbox-img');
+        const loader = document.querySelector('.loader');
 
-    // --- STATE ---
-    let images = [];
-    let idx = 0;
+        let images = [];
+        let idx = 0;
 
-    // --- INIT ---
-    if (!grid) return;
+        if (!grid) return;
 
-    // 1. Harvest Images & Add Listener
-    images = Array.from(grid.querySelectorAll('.gallery-item img')).map(img => img.src);
+        images = Array.from(grid.querySelectorAll('.gallery-item img')).map(img => img.src);
 
-    grid.addEventListener('click', (e) => {
-        const item = e.target.closest('.gallery-item');
-        if (!item) return;
-        
-        e.preventDefault();
-        const clickedSrc = item.querySelector('img')?.src;
-        const foundIdx = images.indexOf(clickedSrc);
-        
-        if (foundIdx !== -1) openLightbox(foundIdx);
-    });
+        grid.addEventListener('click', (e) => {
+            const item = e.target.closest('.gallery-item');
+            if (!item) return;
+            e.preventDefault();
+            const clickedSrc = item.querySelector('img')?.src;
+            const foundIdx = images.indexOf(clickedSrc);
+            if (foundIdx !== -1) openLightbox(foundIdx);
+        });
 
-    // --- CORE FUNCTIONS ---
-    function openLightbox(index) {
-        idx = index;
-        lightbox.classList.add('active');
-        document.body.style.overflow = 'hidden';
-        loadImage();
-    }
+        function openLightbox(index) {
+            idx = index;
+            lightbox.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            loadImage();
+        }
 
-    function loadImage() {
-        imgDisplay.classList.remove('visible');
-        if (loader) loader.classList.remove('hidden');
+        function loadImage() {
+            imgDisplay.classList.remove('visible');
+            if (loader) loader.classList.remove('hidden');
 
-        const tmp = new Image();
-        const targetSrc = images[idx];
+            const tmp = new Image();
+            const targetSrc = images[idx];
 
-        tmp.onload = () => {
-            imgDisplay.src = targetSrc;
-            if (loader) loader.classList.add('hidden');
-            
-            // Double RAF for smooth mobile paint
-            requestAnimationFrame(() => requestAnimationFrame(() => {
-                imgDisplay.classList.add('visible');
-            }));
+            tmp.onload = () => {
+                imgDisplay.src = targetSrc;
+                if (loader) loader.classList.add('hidden');
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    imgDisplay.classList.add('visible');
+                }));
+            };
+            tmp.src = targetSrc;
+        }
+
+        window.closeLightbox = () => {
+            lightbox.classList.remove('active');
+            imgDisplay.classList.remove('visible');
+            document.body.style.overflow = '';
+            setTimeout(() => imgDisplay.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", 300);
         };
-        
-        tmp.src = targetSrc;
-    }
 
-    // --- GLOBAL CONTROLS (Accessible by HTML onclick) ---
-    window.closeLightbox = () => {
-        lightbox.classList.remove('active');
-        imgDisplay.classList.remove('visible');
-        document.body.style.overflow = '';
-        // Clear src to prevent flash on next open
-        setTimeout(() => imgDisplay.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", 300);
-    };
+        window.changeSlide = (dir) => {
+            idx = (idx + dir + images.length) % images.length;
+            loadImage();
+        };
 
-    window.changeSlide = (dir) => {
-        // Optimized Cyclic Math: Handles both negative and positive wrapping
-        idx = (idx + dir + images.length) % images.length;
-        loadImage();
-    };
+        document.addEventListener('keydown', (e) => {
+            if (!lightbox.classList.contains('active')) return;
+            if (e.key === 'Escape') window.closeLightbox();
+            if (e.key === 'ArrowLeft') window.changeSlide(-1);
+            if (e.key === 'ArrowRight') window.changeSlide(1);
+        });
 
-    // --- INPUT LISTENERS ---
-    document.addEventListener('keydown', (e) => {
-        if (!lightbox.classList.contains('active')) return;
-        if (e.key === 'Escape') window.closeLightbox();
-        if (e.key === 'ArrowLeft') window.changeSlide(-1);
-        if (e.key === 'ArrowRight') window.changeSlide(1);
+        lightbox.addEventListener('click', (e) => {
+            if (e.target === lightbox) window.closeLightbox();
+        });
     });
-
-    lightbox.addEventListener('click', (e) => {
-        if (e.target === lightbox) window.closeLightbox();
-    });
-});
     </script>
 </body>
 </html>
